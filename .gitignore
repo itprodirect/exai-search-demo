@@ -1,0 +1,7 @@
+.env
+exa_cache.sqlite
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+venv/
+*.log
