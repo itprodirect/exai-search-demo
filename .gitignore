@@ -5,3 +5,6 @@ __pycache__/
 .venv/
 venv/
 *.log
+
+# Local Exa cache
+exa_cache.sqlite
