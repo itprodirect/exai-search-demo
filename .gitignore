@@ -8,3 +8,6 @@ venv/
 
 # Local Exa cache
 exa_cache.sqlite
+
+# Notebook outputs
+credibility_pass_results.csv
