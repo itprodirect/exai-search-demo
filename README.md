@@ -85,7 +85,7 @@ flowchart LR
 
 ## Videos
 
-- **This repo in ~90 seconds (recommended):** https://www.loom.com/share/2fc3539bfb8e4022a4a4403e3282dd68
+- **This repo in ~90 seconds (Loom):** https://www.loom.com/share/2fc3539bfb8e4022a4a4403e3282dd68
 - **Exa People Search overview (official):** https://www.youtube.com/watch?v=YUOxsHlPyhI
 
 ---
