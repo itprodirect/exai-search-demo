@@ -1,6 +1,8 @@
 # exai-search-demo
 [![ci](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml)
 
+➡️ **Start here:** [Executive Summary](#executive-summary-2-minute-read) • [Screenshots](#what-youll-see-in-this-repo) • [Quickstart](#quickstart)
+
 # Executive Summary (2-minute read)
 
 This repo is a **minimal, reproducible evaluation harness** for using **Exa People Search** in insurance / CAT-loss workflows where you need to quickly identify *credible* experts and professional sources **without runaway cost**.
