@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke-notebook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ipykernel
+
+      - name: Register kernel
+        run: |
+          python -m ipykernel install --user --name python3
+
+      - name: Run no-network smoke execution
+        env:
+          EXA_SMOKE_NO_NETWORK: "1"
+        run: |
+          python scripts/run_notebook_smoke.py
