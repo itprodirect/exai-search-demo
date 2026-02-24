@@ -1,5 +1,5 @@
 # exai-search-demo
-![ci](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml/badge.svg?branch=main)
+[![ci](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml)
 
 Minimal, reproducible Exa People Search evaluation notebook for insurance / CAT-loss workflows. It is designed to test value + cost before integration into a larger claims or litigation-support system.
 
