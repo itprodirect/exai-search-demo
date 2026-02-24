@@ -1,7 +1,7 @@
 # exai-search-demo
 [![ci](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml)
 
-➡️ **Start here:** [Executive Summary](#executive-summary-2-minute-read) • [Screenshots](#what-youll-see-in-this-repo) • [Quickstart](#quickstart)
+➡️ **Start here:** [Executive Summary](#executive-summary-2-minute-read) • [Screenshots](#what-youll-see-in-this-repo)
 
 # Executive Summary (2-minute read)
 
