@@ -1,6 +1,33 @@
 # exai-search-demo
 [![ci](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml)
 
+# Executive Summary (2-minute read)
+
+This repo is a **minimal, reproducible evaluation harness** for using **Exa People Search** in insurance / CAT-loss workflows where you need to quickly identify *credible* experts and professional sources **without runaway cost**.
+
+**What it does**
+- **Pass 1 — People discovery:** fast candidate discovery (often LinkedIn-heavy)
+- **Pass 2 — Credibility verification:** prefer **non-LinkedIn** sources (firm sites, articles, directories) when possible
+- **Cost controls:** budget cap + per-call spend tracking + **SQLite caching** so reruns don’t re-bill
+
+**Why it matters (for attorneys / claims teams)**
+- Faster expert discovery and vetting with an auditable trail of sources
+- Predictable cost: real measured spend + scale projections
+- Designed for **public/professional info only** (no doxxing / no contact harvesting)
+
+## What you’ll see in this repo
+
+### 1) Single-query demo (≈ $0.01)
+![Single query demo](assets/single_query_demo.png)
+
+### 2) Batch cost summary + caching
+![Cost summary](assets/cost_summary.png)
+
+### 3) Credibility pass view (source quality matters)
+![Credibility pass](assets/credibility_pass.png)
+
+---
+
 Minimal, reproducible Exa People Search evaluation notebook for insurance / CAT-loss workflows. It is designed to test value + cost before integration into a larger claims or litigation-support system.
 
 Core artifact:
