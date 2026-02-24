@@ -11,3 +11,6 @@ exa_cache.sqlite
 
 # Notebook outputs
 credibility_pass_results.csv
+
+# sqlite backups
+exa_cache.sqlite.bak.*
