@@ -1,4 +1,4 @@
-.env
+﻿.env
 exa_cache.sqlite
 __pycache__/
 .ipynb_checkpoints/
@@ -6,11 +6,6 @@ __pycache__/
 venv/
 *.log
 
-# Local Exa cache
-exa_cache.sqlite
-
-# Notebook outputs
+# Local generated artifacts
 credibility_pass_results.csv
-
-# sqlite backups
 exa_cache.sqlite.bak.*

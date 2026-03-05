@@ -1,4 +1,4 @@
-name: ci
+﻿name: ci
 
 on:
   push:
@@ -32,4 +32,4 @@ jobs:
         env:
           EXA_SMOKE_NO_NETWORK: "1"
         run: |
-          python scripts/run_notebook_smoke.py
+          python scripts/run_notebook_smoke.py --mode smoke

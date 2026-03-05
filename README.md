@@ -1,200 +1,158 @@
-# exai-search-demo
+﻿# exai-search-demo
 
-[![ci](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/itprodirect/exai-search-demo/actions/workflows/ci.yml)
+Minimal, reproducible **Exa People Search evaluation harness** for insurance / CAT-loss workflows.
 
-➡️ **Start here:** [Executive Summary](#executive-summary-2-minute-read) • [Screenshots](#what-youll-see-in-this-repo) • [Integration](#integration-how-this-fits-into-real-workflows) • [Developer Quickstart](#developer-quickstart) • [Videos](#videos)
+This repo is intentionally in **minimal mode**:
+- one core notebook: `exa_people_search_eval.ipynb`
+- one local env file: `.env` (not committed)
+- one local sqlite cache: `exa_cache.sqlite` (not committed)
 
-Minimal, reproducible **Exa People Search evaluation harness** for insurance / CAT-loss workflows.  
-Designed to validate **value + credibility + cost predictability** before integrating into a larger claims or litigation-support system.
+## What This Repo Evaluates
 
----
+- Query relevance for CAT-loss / insurance professional discovery
+- Cost per uncached query and projected spend at scale
+- Repeatability via sqlite caching (reruns should not re-bill)
+- Safe usage posture (public/professional info only)
 
-## Executive Summary (2-minute read)
+## Recommended Cheap Defaults
 
-This repo demonstrates a **two-pass expert discovery workflow** that is:
+In Cell 2 (`CONFIG`), start with:
+- `use_highlights=True`
+- `use_text=False`
+- `use_summary=False`
+- `num_results=5`
 
-- **Credibility-aware** (prefers non-profile sources when possible)
-- **Cost-controlled** (budget cap + spend tracking)
-- **Repeatable** (SQLite cache prevents rebilling on reruns)
-- **Safe-by-design** (public/professional info only)
+## Windows 11 Setup (Python 3.10+)
 
-### What it does
+1. Open PowerShell in this repo.
+2. Create venv:
 
-- **Pass 1 — People discovery:** fast candidate discovery (often LinkedIn-heavy)
-- **Pass 2 — Credibility verification:** prefer **non-LinkedIn** sources (firm sites, articles, directories) when possible
-- **Cost controls:** budget cap + per-call spend tracking + SQLite caching so reruns don't re-bill
-
-### Why it matters (for attorneys / claims teams)
-
-- Faster expert discovery + vetting with an **auditable trail of sources**
-- **Predictable cost** using measured spend + projections at scale
-- Designed for **public/professional info only** (no doxxing / no contact harvesting)
-
-### Measured results (example run — your numbers may vary)
-
-From a real run of this notebook:
-
-- Avg **uncached** cost/query: **~$0.010592**
-- Simple cost projection:
-  - 100 queries: **~$1.06**
-  - 1,000 queries: **~$10.59**
-  - 10,000 queries: **~$105.92**
-
----
-
-## What you'll see in this repo
-
-### 1) Single-query demo (≈ $0.01)
-
-![Single query demo](assets/single_query_demo.png)
-
-### 2) Batch cost summary + caching
-
-![Cost summary](assets/cost_summary.png)
-
-### 3) Credibility pass view (source quality matters)
-
-![Credibility pass](assets/credibility_pass.png)
-
----
-
-## Integration: how this fits into real workflows
-
-This repo is intentionally a **measured evaluation harness** you can run before integrating People Search into a larger claims / litigation-support system.
-
-```mermaid
-flowchart LR
-  A[Role / expert needed] --> B[Pass 1: People discovery]
-  B --> C[Pass 2: Credibility verification]
-  C --> D[Ranked results + sources]
-  D --> E[Export CSV / handoff to case workflow]
-
-  B --> F[(SQLite cache)]
-  C --> F
-  G[Budget cap + spend tracking] --> B
-  G --> C
-```
-
-### Practical use cases (conference-relevant)
-
-- **Build the expert bench** (engineer, meteorologist, forensic accountant, etc.) with an auditable trail of sources
-- **Rebut a narrative** by prioritizing credible non-profile sources in the credibility pass
-- **Control cost at scale** with measured spend + projections + caching
-
----
-
-## Videos
-
-- **This repo in ~90 seconds (Loom):** https://www.loom.com/share/2fc3539bfb8e4022a4a4403e3282dd68
-- **Exa People Search overview (official):** https://www.youtube.com/watch?v=YUOxsHlPyhI
-
----
-
-## Repo contents
-
-- `exa_people_search_eval.ipynb` — evaluation notebook (two-pass workflow + spend + caching)
-- `scripts/run_notebook_smoke.py` — executes the notebook end-to-end (used by CI)
-- `scripts/reset_cache.py` — safe cache reset utility
-- `.env.example` — environment template (copy to `.env`)
-- `requirements.txt` — dependencies
-- `assets/` — screenshots used in this README
-
----
-
-## Developer Quickstart
-
-### 1) Create and activate a virtualenv
-
-**Windows (PowerShell):**
 ```powershell
-py -3.11 -m venv .venv
+py -3.10 -m venv .venv
+```
+
+3. Activate:
+
+```powershell
 .\.venv\Scripts\Activate.ps1
+```
+
+4. Install dependencies:
+
+```powershell
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**macOS/Linux:**
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
+## Configure Environment
 
-### 2) Configure environment
+Create `.env` from template:
 
-```bash
-cp .env.example .env
+```powershell
+Copy-Item .env.example .env
 ```
 
 Edit `.env`:
+
 ```env
 EXA_API_KEY=your_real_exa_api_key
 EXA_SMOKE_NO_NETWORK=0
+# Optional: set a run id label for grouped budget metrics
+# EXA_RUN_ID=demo-2026-03-05
 ```
 
-### 3) No-network smoke run (no API key, no billing)
+Notes:
+- `.env` is ignored by git.
+- If you want no-network testing, use smoke mode (`EXA_SMOKE_NO_NETWORK=1` or runner `--mode smoke`).
 
-This is what CI runs:
+## Run Notebook
 
-**macOS/Linux:**
-```bash
-EXA_SMOKE_NO_NETWORK=1 python scripts/run_notebook_smoke.py
-```
+Open `exa_people_search_eval.ipynb` in Jupyter Lab or VS Code and run top-to-bottom.
 
-**Windows (PowerShell):**
+Notebook flow is intentionally fixed to 9 cells:
+1. Install/import + env load
+2. Config
+3. Exa call wrapper
+4. Cache wrapper (sqlite) + budget enforcement
+5. Single query demo
+6. Batch query suite
+7. Summary + qualitative notes
+8. Cost projections
+9. Decision rubric + integration recommendations
+
+## Cache + Budget Behavior
+
+- Requests are cached in `exa_cache.sqlite` by payload hash.
+- Repeated requests return cache hits and should not re-bill.
+- Budget hard stop applies to **uncached calls in current `RUN_ID`**.
+- Metrics still include all-time totals for visibility.
+
+Reset cache safely:
+
 ```powershell
-$env:EXA_SMOKE_NO_NETWORK="1"
-python scripts\run_notebook_smoke.py
+python .\scripts\reset_cache.py
 ```
 
-### 4) Real run
+Skip prompt:
 
-Open and run:
-- `exa_people_search_eval.ipynb`
+```powershell
+python .\scripts\reset_cache.py --yes
+```
 
----
+## Smoke Runner (nbclient)
 
-## Demo flow (live / screenshare)
+```powershell
+python .\scripts\run_notebook_smoke.py --mode smoke
+```
 
-Recommended order inside `exa_people_search_eval.ipynb`:
+Modes:
+- `--mode smoke`: forced no-network run (default)
+- `--mode live`: real API calls (requires `EXA_API_KEY`)
+- `--mode auto`: live if key exists, otherwise smoke
 
-1. Single-query demo → shows ≈$0.01 + cache behavior
-2. Batch discovery → shows role coverage / throughput
-3. Credibility pass → prefer non-LinkedIn sources for trust
-4. Cost summary + projections → predictable spend at scale
-5. Recommendation / integration note → how this plugs into a case workflow
+Optional timeout override:
 
----
+```powershell
+python .\scripts\run_notebook_smoke.py --mode smoke --timeout 180
+```
 
-## Cost control philosophy
+## Safe Cost Tuning
 
-This harness is built to be **safe to test**:
+In Cell 2 (`CONFIG`), adjust only these first:
+- `num_results`
+- `use_highlights`
+- `use_text`
+- `use_summary`
 
-- Highlights-first by default (cheap)
-- Optional deeper content is gated
-- Hard budget enforcement
-- Cache reduces repeat costs to near-zero
+Guidance:
+- Keep `num_results` low for first pass
+- Keep text/summary off unless needed for second-pass review
+- Estimator intentionally rejects unsupported high `num_results` ranges until pricing tiers are updated
 
----
+## GitHub Sync
 
-## Guardrails / scope
+If needed:
 
-- **Public/professional info only**
+```powershell
+git init
+git branch -M main
+git add .
+git commit -m "feat: minimal exa people search eval harness"
+git remote add origin https://github.com/itprodirect/exai-search-demo.git
+git push -u origin main
+```
+
+If remote already exists:
+
+```powershell
+git remote set-url origin https://github.com/itprodirect/exai-search-demo.git
+git push -u origin main
+```
+
+## Guardrails
+
+- Public/professional info only
 - No address hunting / doxxing
 - No contact harvesting
+- Redaction stays enabled in notebook output
 - Human review required before operational use
-
----
-
-## Known limitations (honest + useful)
-
-- People discovery is often **LinkedIn-dominated** in pass 1 (expected).
-- Pass 2 is designed to prioritize **credible non-profile sources** when they exist.
-- Domain allow/deny lists may be necessary for production-grade source quality.
-
----
-
-## License
-
-This repo includes an MIT license in `LICENSE`.
