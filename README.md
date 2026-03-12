@@ -22,6 +22,10 @@ In Cell 2 (`CONFIG`), start with:
 - `use_summary=False`
 - `num_results=5`
 
+Optional for before/after reporting in notebook Cell 9:
+- `CONFIG["compare_to_run_id"] = "<baseline-run-id>"`
+- `CONFIG["compare_base_dir"] = "experiments"`
+
 ## Windows 11 Setup (Python 3.10+)
 
 1. Open PowerShell in this repo.
@@ -108,6 +112,7 @@ The search and eval commands write the same experiments/<RUN_ID>/ artifact bundl
 
 Eval output now includes a taxonomy scorecard (relevance, credibility, actionability, confidence) and per-query failure reasons (`no_results`, `off_domain`, `low_confidence`).
 Use `--compare-to-run-id` for before/after deltas across quality and failure rates when both runs share query text.
+When comparison is enabled, the run also writes a human-readable `experiments/<RUN_ID>/comparison.md` report.
 
 ## Benchmark Fixture
 

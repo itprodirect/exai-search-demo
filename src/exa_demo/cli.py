@@ -21,6 +21,7 @@ from .reporting import (
     build_qualitative_notes,
     recommendation,
     summarize_failure_taxonomy,
+    write_comparison_markdown,
 )
 from .safety import extract_preview, redact_text
 
@@ -173,6 +174,7 @@ def run_eval_command(args: argparse.Namespace) -> int:
     )
 
     comparison_report: Dict[str, Any] | None = None
+    comparison_markdown_path: Path | None = None
     if args.compare_to_run_id:
         compare_base_dir = Path(args.compare_base_dir) if args.compare_base_dir else Path(args.artifact_dir)
         compare_run_dir = compare_base_dir / str(args.compare_to_run_id)
@@ -183,6 +185,7 @@ def run_eval_command(args: argparse.Namespace) -> int:
             after_batch_df=batch_df,
             after_recommendation=rec,
         )
+        comparison_markdown_path = write_comparison_markdown(writer.artifact_dir, comparison_report)
 
     summary_extra: Dict[str, Any] = {"taxonomy": taxonomy}
     if comparison_report is not None:
@@ -208,6 +211,7 @@ def run_eval_command(args: argparse.Namespace) -> int:
     }
     if comparison_report is not None:
         payload["comparison"] = comparison_report
+        payload["comparison_markdown_path"] = str(comparison_markdown_path)
 
     if args.as_json:
         print(json.dumps(payload, indent=2))
@@ -226,6 +230,7 @@ def run_eval_command(args: argparse.Namespace) -> int:
         print(f"shared_query_count: {comparison_report['shared_query_count']}")
         print(f"delta_observed_confidence_score: {comparison_report['deltas']['observed_confidence_score']:+.3f}")
         print(f"delta_observed_failure_rate: {comparison_report['deltas']['observed_failure_rate']:+.3f}")
+        print(f"comparison_markdown: {comparison_markdown_path}")
 
     if not batch_df.empty:
         print(batch_df[["query", "result_count", "cache_hit", "actual_cost_usd", "primary_failure_reason"]].to_markdown(index=False))

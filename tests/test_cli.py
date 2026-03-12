@@ -141,6 +141,8 @@ def test_eval_command_can_emit_before_after_comparison(tmp_path, capsys) -> None
     assert output['comparison']['candidate_run_id'] == 'cli-eval-compare'
     assert output['comparison']['shared_query_count'] == 2
     assert 'deltas' in output['comparison']
+    assert (artifact_dir / 'cli-eval-compare' / 'comparison.md').exists()
+    assert output['comparison_markdown_path'].endswith('comparison.md')
 
 
 def test_budget_command_reads_ledger(tmp_path, capsys) -> None:

@@ -4,7 +4,12 @@ import json
 
 import pandas as pd
 
-from exa_demo.reporting import build_before_after_report, summarize_failure_taxonomy
+from exa_demo.reporting import (
+    build_before_after_report,
+    render_comparison_markdown,
+    summarize_failure_taxonomy,
+    write_comparison_markdown,
+)
 
 
 def test_summarize_failure_taxonomy_supports_legacy_rows() -> None:
@@ -121,3 +126,38 @@ def test_build_before_after_report_compares_baseline_with_current_batch(tmp_path
     assert report['shared_query_count'] == 2
     assert report['query_outcomes']['resolved_query_count'] == 2
     assert report['deltas']['observed_failure_rate'] < 0
+
+
+def test_render_and_write_comparison_markdown(tmp_path) -> None:
+    report = {
+        'baseline_run_id': 'baseline',
+        'candidate_run_id': 'candidate',
+        'shared_query_count': 2,
+        'deltas': {
+            'spent_usd': -0.02,
+            'avg_cost_per_uncached_query': -0.01,
+            'observed_relevance_rate': 0.10,
+            'observed_confidence_score': 0.20,
+            'observed_failure_rate': -0.30,
+        },
+        'query_outcomes': {
+            'resolved_query_count': 2,
+            'regressed_query_count': 0,
+            'confidence_improved_query_count': 2,
+            'confidence_declined_query_count': 0,
+            'avg_confidence_delta': 0.20,
+            'resolved_failure_counts': {'no_results': 1},
+            'introduced_failure_counts': {},
+        },
+    }
+
+    markdown = render_comparison_markdown(report)
+    assert '# Before/After Comparison Report' in markdown
+    assert 'Baseline run: `baseline`' in markdown
+    assert '| Observed Failure Rate | -30.0% |' in markdown
+
+    written = write_comparison_markdown(tmp_path, report)
+    assert written.name == 'comparison.md'
+    assert written.exists()
+    assert '## Query Outcomes' in written.read_text(encoding='utf-8')
+

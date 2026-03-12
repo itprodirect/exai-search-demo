@@ -279,6 +279,63 @@ def build_before_after_report(
     }
 
 
+
+def render_comparison_markdown(comparison_report: Mapping[str, Any]) -> str:
+    baseline_run_id = str(comparison_report.get("baseline_run_id") or "baseline")
+    candidate_run_id = str(comparison_report.get("candidate_run_id") or "candidate")
+    deltas = comparison_report.get("deltas") if isinstance(comparison_report.get("deltas"), Mapping) else {}
+    query_outcomes = comparison_report.get("query_outcomes") if isinstance(comparison_report.get("query_outcomes"), Mapping) else {}
+
+    lines: List[str] = []
+    lines.append("# Before/After Comparison Report")
+    lines.append("")
+    lines.append(f"- Baseline run: `{baseline_run_id}`")
+    lines.append(f"- Candidate run: `{candidate_run_id}`")
+    lines.append(f"- Shared queries: {int(comparison_report.get('shared_query_count') or 0)}")
+    lines.append("")
+    lines.append("## Delta Summary")
+    lines.append("")
+    lines.append("| Metric | Delta |")
+    lines.append("| --- | ---: |")
+    lines.append(f"| Spent USD | {_format_delta(deltas.get('spent_usd'), kind='currency')} |")
+    lines.append(f"| Avg Cost Per Uncached Query | {_format_delta(deltas.get('avg_cost_per_uncached_query'), kind='currency')} |")
+    lines.append(f"| Observed Relevance Rate | {_format_delta(deltas.get('observed_relevance_rate'), kind='percent')} |")
+    lines.append(f"| Observed Confidence Score | {_format_delta(deltas.get('observed_confidence_score'), kind='percent')} |")
+    lines.append(f"| Observed Failure Rate | {_format_delta(deltas.get('observed_failure_rate'), kind='percent')} |")
+    lines.append("")
+    lines.append("## Query Outcomes")
+    lines.append("")
+    lines.append(f"- Resolved queries: {int(query_outcomes.get('resolved_query_count') or 0)}")
+    lines.append(f"- Regressed queries: {int(query_outcomes.get('regressed_query_count') or 0)}")
+    lines.append(f"- Confidence improved queries: {int(query_outcomes.get('confidence_improved_query_count') or 0)}")
+    lines.append(f"- Confidence declined queries: {int(query_outcomes.get('confidence_declined_query_count') or 0)}")
+    lines.append(f"- Average confidence delta: {_format_delta(query_outcomes.get('avg_confidence_delta'), kind='percent')}")
+    lines.append("")
+
+    resolved_failures = query_outcomes.get("resolved_failure_counts")
+    introduced_failures = query_outcomes.get("introduced_failure_counts")
+
+    lines.append("## Failure Taxonomy Changes")
+    lines.append("")
+    lines.append(f"- Resolved failure counts: {_format_counter(resolved_failures)}")
+    lines.append(f"- Introduced failure counts: {_format_counter(introduced_failures)}")
+
+    return "\n".join(lines).strip() + "\n"
+
+
+def write_comparison_markdown(
+    artifact_dir: str | Path,
+    comparison_report: Mapping[str, Any],
+    *,
+    filename: str = "comparison.md",
+) -> Path:
+    target_dir = Path(artifact_dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    path = target_dir / filename
+    path.write_text(render_comparison_markdown(comparison_report), encoding="utf-8")
+    return path
+
+
 def _load_run_summary_payload(run_dir: Path) -> Dict[str, Any]:
     summary_path = run_dir / "summary.json"
     if not summary_path.exists():
@@ -447,6 +504,27 @@ def _mean_score(df: pd.DataFrame, column: str, fallback_column: str | None = Non
             return float(fallback.mean())
 
     return 0.0
+
+
+def _format_counter(value: Any) -> str:
+    if not isinstance(value, Mapping):
+        return "none"
+    pairs = [(str(key), int(val)) for key, val in value.items() if int(val) > 0]
+    if not pairs:
+        return "none"
+    pairs.sort(key=lambda item: (-item[1], item[0]))
+    return ", ".join(f"{key}={count}" for key, count in pairs)
+
+
+def _format_delta(value: Any, *, kind: str) -> str:
+    parsed = _safe_float(value, 0.0)
+    if parsed is None:
+        parsed = 0.0
+    if kind == "currency":
+        return f"{parsed:+.4f}"
+    if kind == "percent":
+        return f"{parsed:+.1%}"
+    return f"{parsed:+.4f}"
 
 
 def _truthy(value: Any) -> bool:

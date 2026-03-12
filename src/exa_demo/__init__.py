@@ -14,7 +14,9 @@ from .reporting import (
     build_cost_projections,
     build_qualitative_notes,
     recommendation,
+    render_comparison_markdown,
     summarize_failure_taxonomy,
+    write_comparison_markdown,
 )
 from .safety import extract_preview, redact_text
 
@@ -42,6 +44,8 @@ __all__ = [
     "load_runtime_state",
     "recommendation",
     "redact_text",
+    "render_comparison_markdown",
     "request_hash_for_payload",
     "summarize_failure_taxonomy",
+    "write_comparison_markdown",
 ]
