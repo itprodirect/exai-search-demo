@@ -376,3 +376,37 @@ def test_compare_search_types_command_rejects_duplicate_types(tmp_path) -> None:
                 'deep',
             ]
         )
+
+
+def test_answer_command_smoke_emits_json_and_artifact(tmp_path, capsys) -> None:
+    sqlite_path = tmp_path / 'cache.sqlite'
+    artifact_dir = tmp_path / 'artifacts'
+
+    exit_code = main(
+        [
+            'answer',
+            'What is the Florida appraisal clause dispute process?',
+            '--mode',
+            'smoke',
+            '--run-id',
+            'answer-run',
+            '--sqlite-path',
+            str(sqlite_path),
+            '--artifact-dir',
+            str(artifact_dir),
+            '--json',
+        ]
+    )
+
+    output = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert output['workflow'] == 'answer'
+    assert output['run_id'] == 'answer-run'
+    assert output['citation_count'] == 2
+    assert 'Mock answer' in output['answer']
+    assert (artifact_dir / 'answer-run' / 'answer.json').exists()
+    assert (artifact_dir / 'answer-run' / 'summary.json').exists()
+    answer_payload = json.loads((artifact_dir / 'answer-run' / 'answer.json').read_text(encoding='utf-8'))
+    assert answer_payload['citation_count'] == 2
+    assert answer_payload['citations'][0]['title'] == 'Florida appraisal clause overview'

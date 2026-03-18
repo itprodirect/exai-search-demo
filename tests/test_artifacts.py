@@ -74,3 +74,33 @@ def test_experiment_artifact_writer_persists_run_files(tmp_path) -> None:
     assert summary_payload['observed_confidence_score'] == 1.0
     assert summary_payload['extra']['run_context']['query_suite'] == 'insurance'
     assert summary_payload['extra']['taxonomy']['failure_rate'] == 0.0
+
+
+def test_experiment_artifact_writer_writes_json_artifact(tmp_path) -> None:
+    writer = ExperimentArtifactWriter(
+        run_id='answer-run',
+        config={'mode': 'smoke'},
+        pricing={'search_1_25': 0.005},
+        run_context={'workflow': 'answer'},
+        base_dir=tmp_path,
+    )
+
+    path = writer.write_json_artifact(
+        'answer.json',
+        {
+            'query': 'What is the Florida appraisal clause dispute process?',
+            'answer_text': 'Mock answer text.',
+            'citations': [
+                {
+                    'title': 'Florida appraisal clause overview',
+                    'url': 'https://example.com/florida-appraisal-clause',
+                    'snippet': 'Mock citation.',
+                }
+            ],
+        },
+    )
+
+    payload = json.loads(path.read_text(encoding='utf-8'))
+    assert path.name == 'answer.json'
+    assert payload['query'] == 'What is the Florida appraisal clause dispute process?'
+    assert payload['citations'][0]['title'] == 'Florida appraisal clause overview'

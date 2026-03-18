@@ -4,15 +4,17 @@ import argparse
 import json
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Sequence
+from typing import Any, Callable, Dict, Mapping, Optional, Sequence
 
 import pandas as pd
 from dotenv import load_dotenv
+import requests
 
 from .artifacts import ExperimentArtifactWriter
 from .cache import SqliteCacheStore
 from .client import exa_search_people
 from .config import RuntimeState, default_config, default_pricing, load_runtime_state
+from .cost_model import estimate_cost_from_pricing
 from .evaluation import DEFAULT_RELEVANCE_KEYWORDS, evaluate_batch_queries, evaluate_result_set, load_benchmark_queries, load_benchmark_suites
 from .models import QueryEvaluationRecord
 from .reporting import (
@@ -28,6 +30,7 @@ from .safety import extract_preview, redact_text
 
 LEGACY_DEFAULT_SUITE_ALIAS = "insurance"
 DEFAULT_BENCHMARK_SUITE = "all"
+EXA_ANSWER_ENDPOINT = "https://api.exa.ai/answer"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -59,6 +62,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     eval_parser.add_argument("--json", action="store_true", dest="as_json", help="Emit summary JSON instead of a text summary.")
     eval_parser.set_defaults(handler=run_eval_command)
+
+    answer_parser = subparsers.add_parser("answer", help="Run a cited-answer query.")
+    _add_common_runtime_args(answer_parser)
+    answer_parser.add_argument("query", help="Question to send to Exa.")
+    answer_parser.add_argument("--json", action="store_true", dest="as_json", help="Emit structured JSON instead of a text summary.")
+    answer_parser.set_defaults(handler=run_answer_command)
 
     compare_parser = subparsers.add_parser(
         "compare-search-types",
@@ -177,6 +186,100 @@ def run_search_command(args: argparse.Namespace) -> int:
 def run_eval_command(args: argparse.Namespace) -> int:
     payload = _run_eval_workflow(args)
     _emit_eval_payload(payload, as_json=bool(args.as_json))
+    return 0
+
+
+def run_answer_command(args: argparse.Namespace) -> int:
+    config, pricing, runtime = _prepare_runtime(args)
+    cache_store = _cache_store(config)
+    request_payload = _build_answer_request_payload(args.query)
+    estimated_cost = estimate_cost_from_pricing(
+        {"type": "auto"},
+        1,
+        pricing,
+        int(config["max_supported_results_for_estimate"]),
+    )
+
+    response_json, cache_hit = cache_store.get_or_set(
+        request_payload,
+        estimated_cost,
+        run_id=runtime.run_id,
+        budget_cap_usd=float(config["budget_cap_usd"]),
+        fetcher=lambda payload: _answer_http_call(
+            payload,
+            exa_api_key=runtime.exa_api_key,
+            smoke_no_network=runtime.smoke_no_network,
+        ),
+    )
+
+    answer_payload = _build_answer_artifact(
+        args.query,
+        request_payload=request_payload,
+        response_json=response_json,
+        cache_hit=cache_hit,
+        estimated_cost_usd=estimated_cost,
+    )
+
+    summary = cache_store.spend_so_far(run_id=runtime.run_id)
+    writer = ExperimentArtifactWriter(
+        run_id=runtime.run_id,
+        config=config,
+        pricing=pricing,
+        run_context={"workflow": "answer"},
+        base_dir=args.artifact_dir,
+    )
+    writer.write_json_artifact("answer.json", answer_payload)
+    writer.write_summary(
+        summary,
+        projections={
+            "projection_basis": "observed_avg_uncached",
+            "unit_cost_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0),
+            "projected_100_queries_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0) * 100,
+            "projected_1000_queries_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0) * 1000,
+            "projected_10000_queries_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0) * 10000,
+        },
+        recommendation_data={"headline_recommendation": "Use for cited-answer workflows with human review"},
+        qualitative_notes=[
+            "Answer workflow active: answer text and citations are stored in answer.json.",
+            "Smoke mode active: answers are mocked and costs are zero.",
+        ] if runtime.smoke_no_network else [
+            "Answer workflow active: answer text and citations are stored in answer.json.",
+        ],
+        extra={
+            "workflow": "answer",
+            "answer": {
+                "query": args.query,
+                "cache_hit": cache_hit,
+                "citation_count": answer_payload["citation_count"],
+                "answer_length": len(answer_payload["answer_text"]),
+            },
+        },
+    )
+
+    payload = {
+        "workflow": "answer",
+        "run_id": runtime.run_id,
+        "artifact_dir": str(writer.artifact_dir),
+        "answer": answer_payload["answer_text"],
+        "citations": answer_payload["citations"],
+        "citation_count": answer_payload["citation_count"],
+        "cache_hit": cache_hit,
+        "request_id": answer_payload.get("request_id"),
+        "summary": summary,
+    }
+    if args.as_json:
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    print(f"run_id: {runtime.run_id}")
+    print(f"artifact_dir: {writer.artifact_dir}")
+    print(f"cache_hit: {cache_hit}")
+    print(f"citation_count: {answer_payload['citation_count']}")
+    print("")
+    print(answer_payload["answer_text"])
+    if answer_payload["citations"]:
+        print("")
+        print(pd.DataFrame(answer_payload["citations"]).to_markdown(index=False))
     return 0
 
 
@@ -570,3 +673,112 @@ def _namespace_with_overrides(args: argparse.Namespace, **overrides: Any) -> arg
 def _run_id_suffix_for_search_type(search_type: str) -> str:
     text = str(search_type or "").strip().lower()
     return text.replace("_", "-")
+
+
+def _build_answer_request_payload(query: str) -> Dict[str, Any]:
+    return {
+        "query": query,
+    }
+
+
+def _answer_http_call(
+    payload: Dict[str, Any],
+    *,
+    exa_api_key: str,
+    smoke_no_network: bool,
+    timeout: int = 60,
+) -> Dict[str, Any]:
+    if smoke_no_network:
+        return _mock_answer_response(payload)
+
+    if not exa_api_key:
+        raise RuntimeError("Missing EXA_API_KEY for live Exa answer request.")
+
+    headers = {"x-api-key": exa_api_key, "Content-Type": "application/json"}
+    response = requests.post(
+        EXA_ANSWER_ENDPOINT,
+        headers=headers,
+        json=payload,
+        timeout=timeout,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def _mock_answer_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
+    query = str(payload.get("query") or "")
+    slug = query[:24].strip().lower().replace(" ", "-") or "answer"
+    citations = [
+        {
+            "title": "Florida appraisal clause overview",
+            "url": "https://example.com/florida-appraisal-clause",
+            "snippet": "Mock citation about appraisal clause dispute flow.",
+        },
+        {
+            "title": "Insurance claim dispute process",
+            "url": "https://example.com/insurance-dispute-process",
+            "snippet": "Mock citation about dispute resolution steps.",
+        },
+    ]
+    return {
+        "requestId": f"smoke-{slug}",
+        "answer": (
+            "Mock answer: the Florida appraisal clause dispute process typically starts with a demand, "
+            "followed by insurer response and, if needed, appraisal selection."
+        ),
+        "citations": citations,
+        "_smokeMode": True,
+    }
+
+
+def _build_answer_artifact(
+    query: str,
+    *,
+    request_payload: Mapping[str, Any],
+    response_json: Mapping[str, Any],
+    cache_hit: bool,
+    estimated_cost_usd: float,
+) -> Dict[str, Any]:
+    answer_text = str(response_json.get("answer") or response_json.get("text") or "").strip()
+    citations = _normalize_citations(response_json.get("citations"))
+    return {
+        "query": query,
+        "request_payload": dict(request_payload),
+        "response": json.loads(json.dumps(dict(response_json), ensure_ascii=False, default=str)),
+        "request_id": response_json.get("requestId") if isinstance(response_json, Mapping) else None,
+        "cache_hit": cache_hit,
+        "estimated_cost_usd": float(estimated_cost_usd),
+        "actual_cost_usd": _answer_actual_cost(response_json),
+        "answer_text": answer_text,
+        "citation_count": len(citations),
+        "citations": citations,
+    }
+
+
+def _normalize_citations(value: Any) -> list[Dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+
+    citations: list[Dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, Mapping):
+            continue
+        citations.append(
+            {
+                "title": str(item.get("title") or "").strip(),
+                "url": str(item.get("url") or "").strip(),
+                "snippet": str(item.get("snippet") or item.get("text") or "").strip(),
+            }
+        )
+    return citations
+
+
+def _answer_actual_cost(response_json: Mapping[str, Any]) -> float:
+    cost = response_json.get("costDollars")
+    if isinstance(cost, Mapping):
+        total = cost.get("total")
+        try:
+            return float(total)
+        except (TypeError, ValueError):
+            return 0.0
+    return 0.0

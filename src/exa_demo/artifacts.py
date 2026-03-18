@@ -119,6 +119,11 @@ class ExperimentArtifactWriter:
         self._write_json(self.summary_path, payload)
         return self.summary_path
 
+    def write_json_artifact(self, filename: str, payload: Mapping[str, Any]) -> Path:
+        path = self.artifact_dir / str(filename)
+        self._write_json(path, payload)
+        return path
+
     def _append_jsonl(self, path: Path, payload: Mapping[str, Any]) -> None:
         with path.open('a', encoding='utf-8', newline='\n') as handle:
             handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True))
