@@ -2,6 +2,24 @@ from __future__ import annotations
 
 from exa_demo.client import build_exa_payload, mock_exa_response
 from exa_demo.config import default_config
+from exa_demo.client import build_answer_payload, exa_answer, mock_exa_answer_response
+from exa_demo.config import default_pricing
+
+
+class FakeCacheStore:
+    def __init__(self) -> None:
+        self.calls = []
+
+    def get_or_set(self, payload, estimated_cost, *, run_id, budget_cap_usd, fetcher):
+        self.calls.append(
+            {
+                "payload": payload,
+                "estimated_cost": estimated_cost,
+                "run_id": run_id,
+                "budget_cap_usd": budget_cap_usd,
+            }
+        )
+        return fetcher(payload), False
 
 
 def test_build_exa_payload_includes_additive_deep_search_fields() -> None:
@@ -62,3 +80,43 @@ def test_mock_exa_response_preserves_search_result_shape_with_additive_controls(
     assert isinstance(response["results"], list)
     assert len(response["results"]) == payload["numResults"]
     assert response["results"][0]["title"].startswith("Mock Professional Result")
+
+
+def test_build_answer_payload_is_query_only() -> None:
+    payload = build_answer_payload("What is the Florida appraisal clause dispute process?")
+
+    assert payload == {"query": "What is the Florida appraisal clause dispute process?", "text": True}
+
+
+def test_mock_exa_answer_response_returns_citations() -> None:
+    payload = build_answer_payload("What is the Florida appraisal clause dispute process?")
+
+    response = mock_exa_answer_response(payload)
+
+    assert response["answer"].startswith("Mock answer for query:")
+    assert isinstance(response["citations"], list)
+    assert len(response["citations"]) == 2
+    assert response["citations"][0]["url"].startswith("https://example.com/mock-answer/")
+
+
+def test_exa_answer_uses_smoke_cited_answer_shape() -> None:
+    cache_store = FakeCacheStore()
+    config = default_config()
+    pricing = default_pricing()
+
+    response_json, meta = exa_answer(
+        "What is the Florida appraisal clause dispute process?",
+        config=config,
+        pricing=pricing,
+        exa_api_key="",
+        smoke_no_network=True,
+        run_id="answer-run",
+        cache_store=cache_store,
+    )
+
+    assert response_json["answer"].startswith("Mock answer for query:")
+    assert len(response_json["citations"]) == 2
+    assert meta.cache_hit is False
+    assert meta.request_payload == {"query": "What is the Florida appraisal clause dispute process?", "text": True}
+    assert meta.estimated_cost_usd == pricing["search_1_25"]
+    assert cache_store.calls[0]["run_id"] == "answer-run"

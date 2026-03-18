@@ -114,6 +114,109 @@ class CostBreakdown:
 
 
 @dataclass(frozen=True)
+class AnswerCitation:
+    title: Optional[str]
+    url: Optional[str]
+    snippet: Optional[str] = None
+    published_date: Optional[str] = None
+    author: Optional[str] = None
+
+    @classmethod
+    def from_api_citation(cls, citation: Mapping[str, Any]) -> "AnswerCitation":
+        return cls(
+            title=_optional_str(citation.get("title") or citation.get("name")),
+            url=_optional_str(citation.get("url") or citation.get("sourceUrl")),
+            snippet=_optional_str(citation.get("snippet") or citation.get("text") or citation.get("passage")),
+            published_date=_optional_str(citation.get("publishedDate") or citation.get("published_date")),
+            author=_optional_str(citation.get("author")),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class AnswerRecord:
+    question: str
+    cache_hit: bool
+    request_hash: Optional[str]
+    request_payload: Dict[str, Any]
+    request_id: Optional[str]
+    created_at_utc: Optional[str]
+    estimated_cost_usd: float
+    actual_cost_usd: Optional[float]
+    answer: Optional[str]
+    answer_preview: str
+    citation_count: int
+    top_citation_title: Optional[str]
+    top_citation_url: Optional[str]
+    citations: List[AnswerCitation] = field(default_factory=list)
+
+    @classmethod
+    def from_runtime(
+        cls,
+        question: str,
+        response_json: Mapping[str, Any] | None,
+        meta: Any,
+    ) -> "AnswerRecord":
+        citations: List[Mapping[str, Any]] = []
+        if isinstance(response_json, Mapping):
+            citation_value = response_json.get("citations")
+            if not isinstance(citation_value, list):
+                citation_value = response_json.get("sources")
+            if not isinstance(citation_value, list):
+                citation_value = response_json.get("results")
+            if isinstance(citation_value, list):
+                citations = [item for item in citation_value if isinstance(item, Mapping)]
+
+        answer_text = None
+        if isinstance(response_json, Mapping):
+            answer_text = _optional_str(
+                response_json.get("answer")
+                or response_json.get("text")
+                or response_json.get("response")
+                or response_json.get("content")
+            )
+
+        parsed_citations = [AnswerCitation.from_api_citation(item) for item in citations]
+        top_citation = parsed_citations[0] if parsed_citations else None
+
+        return cls(
+            question=question,
+            cache_hit=bool(getattr(meta, "cache_hit", False)),
+            request_hash=_optional_str(getattr(meta, "request_hash", None)),
+            request_payload=_mapping_to_dict(getattr(meta, "request_payload", None)),
+            request_id=_optional_str(getattr(meta, "request_id", None)),
+            created_at_utc=_optional_str(getattr(meta, "created_at_utc", None)),
+            estimated_cost_usd=float(getattr(meta, "estimated_cost_usd", 0.0) or 0.0),
+            actual_cost_usd=_optional_float(getattr(meta, "actual_cost_usd", None)),
+            answer=answer_text,
+            answer_preview=(answer_text or "")[:220],
+            citation_count=len(parsed_citations),
+            top_citation_title=top_citation.title if top_citation else None,
+            top_citation_url=top_citation.url if top_citation else None,
+            citations=parsed_citations,
+        )
+
+    def to_flat_dict(self) -> Dict[str, Any]:
+        return {
+            "question": self.question,
+            "cache_hit": self.cache_hit,
+            "request_hash": self.request_hash,
+            "request_id": self.request_id,
+            "est_cost_usd": self.estimated_cost_usd,
+            "actual_cost_usd": self.actual_cost_usd,
+            "answer_preview": self.answer_preview,
+            "citation_count": self.citation_count,
+            "top_citation_title": self.top_citation_title,
+            "top_citation_url": self.top_citation_url,
+        }
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class QueryEvaluationRecord:
     query: str
     cache_hit: bool

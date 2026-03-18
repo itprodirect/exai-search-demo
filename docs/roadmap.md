@@ -42,7 +42,7 @@ These items expand the repo from a people-search harness into a broader Exa capa
 
 | Roadmap item | Goal | Why it matters | Current status | Dependencies | Success criteria | GitHub issue |
 | --- | --- | --- | --- | --- | --- | --- |
-| `/answer` endpoint demo | Add cited-answer workflows for fast regulatory and case-law lookups | Delivers immediate utility for research-style questions | `Next` | Typed models, reporting | Repo includes a documented demo or workflow for `/answer` with cited outputs and evaluation hooks | [#7](https://github.com/itprodirect/exai-search-demo/issues/7) |
+| `/answer` endpoint demo | Add cited-answer workflows for fast regulatory and case-law lookups | Delivers immediate utility for research-style questions | `Done` | Typed models, reporting | Repo includes a documented demo or workflow for `/answer` with cited outputs and evaluation hooks | [#7](https://github.com/itprodirect/exai-search-demo/issues/7) |
 | Deep vs deep-reasoning comparison | Compare `auto`, `deep`, and `deep-reasoning` quality/cost tradeoffs for domain queries | Quantifies whether higher-cost search modes are worth using in this vertical | `Done` | Experiment artifacts, reporting | Repeatable comparison output shows quality and spend deltas across search types | [#8](https://github.com/itprodirect/exai-search-demo/issues/8) |
 | Structured output with `output_schema` | Extract structured entities directly from deep search responses | Enables downstream graph, analytics, and dataset workflows | `Next` | Typed models, deep-search support | Structured outputs are validated, stored, and demoed from a supported query set | [#9](https://github.com/itprodirect/exai-search-demo/issues/9) |
 | `/findSimilar` demo | Add seed-URL discovery for competitor, expert, and content expansion | Broadens discovery workflows beyond keyword search | `Later` | CLI or notebook demo conventions | Repo includes a reproducible `/findSimilar` workflow and evaluation framing | [#10](https://github.com/itprodirect/exai-search-demo/issues/10) |
@@ -77,6 +77,7 @@ Planned commands:
 
 ```powershell
 python -m exa_demo search "public adjuster Florida hurricane"
+python -m exa_demo answer "What is the Florida appraisal clause dispute process?"
 python -m exa_demo eval --suite insurance
 python -m exa_demo compare-search-types --suite forensic_and_damage_engineering --baseline-type deep --candidate-type deep-reasoning
 python -m exa_demo budget --run-id demo-2026-03

@@ -75,6 +75,10 @@ def build_exa_payload(
     return payload
 
 
+def build_answer_payload(query: str) -> Dict[str, Any]:
+    return {"query": query, "text": True}
+
+
 def mock_exa_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
     query = str(payload.get("query") or "")
     num_results = int(payload.get("numResults") or 5)
@@ -111,15 +115,43 @@ def mock_exa_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
 
+def mock_exa_answer_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
+    query = str(payload.get("query") or "")
+    slug = sha256_hex(query)[:8]
+    citations = [
+        {
+            "title": f"Mock Answer Citation {index + 1}",
+            "url": f"https://example.com/mock-answer/{slug}/{index + 1}",
+            "snippet": (
+                f"Mock source snippet {index + 1} for query: {query}. "
+                "Public/professional info only."
+            ),
+            "publishedDate": "2026-03-18",
+            "author": "Mock Analyst",
+        }
+        for index in range(2)
+    ]
+    return {
+        "requestId": f"smoke-{slug}",
+        "answer": f"Mock answer for query: {query}. Public/professional info only.",
+        "citations": citations,
+        "costDollars": {"search": 0.0, "contents": 0.0, "total": 0.0},
+        "_smokeMode": True,
+    }
+
+
 def exa_http_call(
     payload: Dict[str, Any],
     *,
     config: Mapping[str, Any],
     exa_api_key: str,
     smoke_no_network: bool,
+    endpoint_name: str = "search",
     timeout: int = 60,
 ) -> Dict[str, Any]:
     if smoke_no_network:
+        if endpoint_name == "answer":
+            return mock_exa_answer_response(payload)
         return mock_exa_response(payload)
 
     if not exa_api_key:
@@ -127,7 +159,7 @@ def exa_http_call(
 
     headers = {"x-api-key": exa_api_key, "Content-Type": "application/json"}
     response = requests.post(
-        str(config["exa_endpoint"]),
+        _resolve_exa_endpoint(str(config["exa_endpoint"]), endpoint_name=endpoint_name),
         headers=headers,
         json=payload,
         timeout=timeout,
@@ -165,6 +197,7 @@ def exa_search_people(
             config=config,
             exa_api_key=exa_api_key,
             smoke_no_network=smoke_no_network,
+            endpoint_name="search",
         ),
     )
 
@@ -179,3 +212,57 @@ def exa_search_people(
         created_at_utc=datetime.now(timezone.utc).isoformat(),
     )
     return response_json, meta
+
+
+def exa_answer(
+    query: str,
+    *,
+    config: Mapping[str, Any],
+    pricing: Mapping[str, float],
+    exa_api_key: str,
+    smoke_no_network: bool,
+    run_id: str,
+    cache_store: SqliteCacheStore,
+) -> Tuple[Dict[str, Any], ExaCallMeta]:
+    payload = build_answer_payload(query)
+    estimated_cost = _estimate_answer_cost_from_pricing(pricing)
+
+    response_json, cache_hit = cache_store.get_or_set(
+        payload,
+        estimated_cost,
+        run_id=run_id,
+        budget_cap_usd=float(config["budget_cap_usd"]),
+        fetcher=lambda request_payload: exa_http_call(
+            request_payload,
+            config=config,
+            exa_api_key=exa_api_key,
+            smoke_no_network=smoke_no_network,
+            endpoint_name="answer",
+        ),
+    )
+
+    meta = ExaCallMeta(
+        cache_hit=cache_hit,
+        request_hash=request_hash_for_payload(payload),
+        request_payload=payload,
+        estimated_cost_usd=estimated_cost,
+        actual_cost_usd=parse_actual_cost(response_json),
+        request_id=response_json.get("requestId") if isinstance(response_json, dict) else None,
+        resolved_search_type=None,
+        created_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    return response_json, meta
+
+
+def _estimate_answer_cost_from_pricing(pricing: Mapping[str, float]) -> float:
+    for key in ("answer", "answer_1", "answer_1_25"):
+        if key in pricing:
+            return float(pricing[key])
+    return float(pricing.get("search_1_25", 0.0))
+
+
+def _resolve_exa_endpoint(base_url: str, *, endpoint_name: str) -> str:
+    trimmed = base_url.rstrip("/")
+    if trimmed.endswith("/search"):
+        return trimmed[: -len("/search")] + f"/{endpoint_name}"
+    return f"{trimmed}/{endpoint_name}"

@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from exa_demo.models import CostBreakdown, ExaResult, QueryEvaluationRecord
+from exa_demo.models import AnswerCitation, AnswerRecord, CostBreakdown, ExaResult, QueryEvaluationRecord
 
 
 class Meta:
@@ -90,3 +90,54 @@ def test_query_evaluation_record_builds_flat_row() -> None:
     assert flat['confidence_score'] == 1.0
     assert flat['failure_reasons'] == []
     assert record.results[0].title == 'Forensic Engineer'
+
+
+def test_answer_citation_normalizes_source_fields() -> None:
+    citation = AnswerCitation.from_api_citation(
+        {
+            'name': 'Florida Appraisal Statute',
+            'sourceUrl': 'https://example.com/statute',
+            'text': 'Appraisal clause dispute process',
+            'published_date': '2026-03-01',
+            'author': 'Analyst',
+        }
+    )
+
+    assert citation.title == 'Florida Appraisal Statute'
+    assert citation.url == 'https://example.com/statute'
+    assert citation.snippet == 'Appraisal clause dispute process'
+    assert citation.published_date == '2026-03-01'
+
+
+def test_answer_record_builds_flat_row() -> None:
+    class AnswerMeta:
+        cache_hit = True
+        request_hash = 'hash-answer'
+        request_payload = {'query': 'What is the Florida appraisal clause dispute process?'}
+        request_id = 'answer-abc'
+        created_at_utc = '2026-03-18T00:00:00+00:00'
+        estimated_cost_usd = 0.005
+        actual_cost_usd = 0.0
+
+    record = AnswerRecord.from_runtime(
+        'What is the Florida appraisal clause dispute process?',
+        {
+            'answer': 'Mock answer for query: What is the Florida appraisal clause dispute process?',
+            'citations': [
+                {
+                    'title': 'Florida Appraisal Statute',
+                    'url': 'https://example.com/statute',
+                    'snippet': 'Appraisal clause dispute process',
+                }
+            ],
+        },
+        AnswerMeta(),
+    )
+
+    flat = record.to_flat_dict()
+    assert flat['question'] == 'What is the Florida appraisal clause dispute process?'
+    assert flat['request_id'] == 'answer-abc'
+    assert flat['citation_count'] == 1
+    assert flat['top_citation_url'] == 'https://example.com/statute'
+    assert record.answer.startswith('Mock answer for query:')
+    assert record.citations[0].title == 'Florida Appraisal Statute'

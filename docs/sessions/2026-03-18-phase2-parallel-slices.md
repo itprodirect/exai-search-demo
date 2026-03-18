@@ -2,7 +2,7 @@
 
 - Date: 2026-03-18
 - Participants: User, Codex, subagents
-- Related roadmap items: `#8`, `#13`, `#16`, `#17`
+- Related roadmap items: `#7`, `#8`, `#13`, `#16`, `#17`
 - Related ADRs: none
 
 ## Context
@@ -25,6 +25,7 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 ## Issues Opened or Updated
 
 - Closed completed GitHub issues after reconciling tracker state with the shipped repo surface: `#1`, `#2`, `#3`, `#4`, `#5`, and `#8`.
+- `#7 Add /answer endpoint demo and cited-answer evaluation`: moved to `Implemented and pushed` after landing the standalone `answer` workflow.
 - `#16 Extend CI/security hardening and document integration follow-ons`: moved to `In progress` for pytest-in-CI and script/negative-path coverage work.
 - `#8 Add deep vs deep-reasoning comparison workflow`: moved from `In progress` to `Implemented and pushed` after landing the end-to-end compare command on top of grouped reporting.
 - `#13 Expand domain query suites for PA, CAT law, appraisers, IA, and adjacent industries`: moved to `In progress` after landing named benchmark suites and suite-aware reporting context.
@@ -50,6 +51,8 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 - `pytest -q` -> passed after grouped reporting plus suite-selection integration with `37 passed`.
 - `pytest -q tests\test_cli.py` -> passed for the end-to-end `compare-search-types` workflow.
 - `pytest -q` -> passed after the workflow slice with `39 passed`.
+- `pytest -q tests\test_client.py tests\test_models.py tests\test_cli.py tests\test_artifacts.py` -> passed for the integrated `/answer` workflow.
+- `pytest -q` -> passed after `/answer` integration with `46 passed`.
 
 ## Outcome
 
@@ -69,8 +72,12 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 - Completed the next product slice for `#8`:
   - A follow-up local commit from this session lands `compare-search-types`, which executes deep-vs-deep-reasoning evaluations end to end and emits the grouped comparison bundle in one command.
 - The repo now has a real workflow command for search-type experiments rather than only low-level controls.
+- Completed the next product slice for `#7`:
+  - `9acbeab` landed the standalone `answer` command and `answer.json` artifact wiring.
+  - A follow-up local commit from this session lands the `/answer` client path, answer-specific models, smoke responses, and tests.
+- The repo now supports cited-answer runs as a first-class workflow without forcing them through ranked-search evaluation semantics.
 
 ## Next-Session Handoff
 
 - Decide whether to add category/date-filter guardrails for unsupported `people`/`company` combinations before expanding into `/answer` or structured-output work.
-- Choose between `/answer` endpoint coverage and structured-output deep search as the next product-facing slice.
+- Structured-output deep search is now the cleanest next product-facing slice.
