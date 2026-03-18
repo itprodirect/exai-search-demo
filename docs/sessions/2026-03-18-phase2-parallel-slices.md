@@ -2,7 +2,7 @@
 
 - Date: 2026-03-18
 - Participants: User, Codex, subagents
-- Related roadmap items: `#7`, `#8`, `#9`, `#13`, `#16`, `#17`
+- Related roadmap items: `#7`, `#8`, `#9`, `#10`, `#13`, `#16`, `#17`
 - Related ADRs: none
 
 ## Context
@@ -29,6 +29,7 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 - `#16 Extend CI/security hardening and document integration follow-ons`: moved to `In progress` for pytest-in-CI and script/negative-path coverage work.
 - `#8 Add deep vs deep-reasoning comparison workflow`: moved from `In progress` to `Implemented and pushed` after landing the end-to-end compare command on top of grouped reporting.
 - `#9 Add structured-output extraction with output_schema`: moved from `Open` to `Closed` after landing the standalone structured-search workflow and schema-driven extraction path.
+- `#10 Add /findSimilar demo for seed-URL discovery`: moved from `Open` to `Closed` after landing the standalone seed-URL discovery workflow and separate normalization path.
 - `#13 Expand domain query suites for PA, CAT law, appraisers, IA, and adjacent industries`: moved to `In progress` after landing named benchmark suites and suite-aware reporting context.
 
 ## Docs Touched
@@ -56,6 +57,8 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 - `pytest -q` -> passed after `/answer` integration with `46 passed`.
 - `pytest -q tests\test_client.py tests\test_models.py` -> passed for the structured-search core path with `16 passed`.
 - `pytest -q` -> passed after structured-search integration with `55 passed`.
+- `pytest -q tests\test_cli.py tests\test_artifacts.py` -> passed for the `find-similar` workflow slice.
+- `pytest -q` -> passed after `/findSimilar` integration with `63 passed`.
 
 ## Outcome
 
@@ -83,8 +86,12 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
   - `9be7409` landed the structured-search core client path, typed structured-output models, smoke responses, and focused tests.
   - `20cc69a` landed the standalone `structured-search` CLI workflow, `structured_output.json` artifact wiring, and workflow tests.
 - The repo now supports schema-driven extraction as a first-class workflow without forcing structured payloads through the ranked-search `results.jsonl` evaluation contract.
+- Completed the next product slice for `#10`:
+  - `c1624f8` landed the `/findSimilar` core client path, separate normalization models, smoke responses, and focused tests.
+  - `c861e94` landed the standalone `find-similar` CLI workflow, `find_similar.json` artifact wiring, and workflow tests.
+- The repo now supports seed-URL discovery as a first-class workflow without forcing similar-result payloads through the ranked-search evaluation contract.
 
 ## Next-Session Handoff
 
-- Decide whether `/findSimilar` or `/research` is the next highest-alpha API slice now that `/answer`, deep-vs-deep-reasoning, and structured-search are all shipped.
+- `/research` is now the cleanest next API slice after `/answer`, deep-vs-deep-reasoning, structured-search, and `/findSimilar`.
 - Keep reconciling GitHub issue state and docs as remaining domain and repo-ops slices land.
