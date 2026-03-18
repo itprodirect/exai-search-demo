@@ -2,8 +2,10 @@
 
 import json
 
-from exa_demo.cli import main
+import pytest
+
 from exa_demo.cache import SqliteCacheStore
+from exa_demo.cli import main
 
 
 def test_search_command_smoke_emits_json_and_artifacts(tmp_path, capsys) -> None:
@@ -164,3 +166,52 @@ def test_budget_command_reads_ledger(tmp_path, capsys) -> None:
     assert output['summary']['request_count'] == 1
     assert output['summary']['spent_usd'] == 0.02
     assert output['ledger_rows'] == 1
+
+
+def test_search_command_live_requires_api_key(tmp_path, monkeypatch) -> None:
+    sqlite_path = tmp_path / 'cache.sqlite'
+    artifact_dir = tmp_path / 'artifacts'
+
+    # Prevent .env contents from re-populating EXA_API_KEY during the test.
+    from exa_demo import cli as cli_module
+
+    monkeypatch.setattr(cli_module, 'load_dotenv', lambda: None)
+    monkeypatch.delenv('EXA_API_KEY', raising=False)
+
+    with pytest.raises(RuntimeError, match='Missing EXA_API_KEY'):
+        main(
+            [
+                'search',
+                'forensic engineer insurance expert witness',
+                '--mode',
+                'live',
+                '--sqlite-path',
+                str(sqlite_path),
+                '--artifact-dir',
+                str(artifact_dir),
+            ]
+        )
+
+
+def test_eval_command_rejects_invalid_queries_file(tmp_path) -> None:
+    sqlite_path = tmp_path / 'cache.sqlite'
+    artifact_dir = tmp_path / 'artifacts'
+    bad_queries_file = tmp_path / 'queries.json'
+    bad_queries_file.write_text('not valid json', encoding='utf-8')
+
+    with pytest.raises(json.JSONDecodeError):
+        main(
+            [
+                'eval',
+                '--mode',
+                'smoke',
+                '--run-id',
+                'cli-eval-invalid',
+                '--sqlite-path',
+                str(sqlite_path),
+                '--artifact-dir',
+                str(artifact_dir),
+                '--queries-file',
+                str(bad_queries_file),
+            ]
+        )
