@@ -7,6 +7,58 @@ This repo is intentionally in **minimal mode**:
 - one local env file: `.env` (not committed)
 - one local sqlite cache: `exa_cache.sqlite` (not committed)
 
+## Quick Navigation
+
+- [What this repo evaluates](#what-this-repo-evaluates)
+- [Feature matrix](#feature-matrix)
+- [Architecture](#architecture)
+- [Windows 11 setup](#windows-11-setup-python-310)
+- [CLI commands](#cli-commands)
+- [Experiment artifacts](#experiment-artifacts)
+- [Roadmap and delivery history](#roadmap-and-delivery-history)
+- [Guardrails](#guardrails)
+
+## Feature Matrix
+
+| Capability | Status | Primary interface | Primary artifact/output | Notes |
+| --- | --- | --- | --- | --- |
+| Ranked search | Done | `python -m exa_demo search` | `results.jsonl`, `summary.json` | Supports additive deep-search controls |
+| Benchmark evaluation | Done | `python -m exa_demo eval` | `queries.jsonl`, `results.jsonl`, `summary.json` | Includes taxonomy scoring and grouped comparison context |
+| Search-type comparison | Done | `python -m exa_demo compare-search-types` | `comparison.md` plus paired run artifacts | Compares `deep` vs `deep-reasoning` end to end |
+| Cited answers | Done | `python -m exa_demo answer` | `answer.json` | Separate workflow from ranked-search evaluation |
+| Structured extraction | Done | `python -m exa_demo structured-search` | `structured_output.json` | Uses `outputSchema` for schema-driven extraction |
+| Seed-URL discovery | Done | `python -m exa_demo find-similar` | `find_similar.json` | Separate `/findSimilar` workflow and normalization path |
+| Cache and budget ledger | Done | Notebook + CLI | `exa_cache.sqlite`, `summary.json` | Prevents re-billing on cache hits |
+| Smoke CI and local tests | Done | GitHub Actions + `pytest -q` | CI runs and local test suite | Default workflow runs `pytest` and notebook smoke |
+
+## Architecture
+
+```mermaid
+flowchart TD
+    U["Notebook or CLI user flow"] --> CLI["CLI / notebook orchestration"]
+    CLI --> CFG["Config + runtime state"]
+    CLI --> CACHE["SQLite cache + budget ledger"]
+    CLI --> CLIENT["Exa client adapters"]
+    CLIENT --> EXA["Exa endpoints\n/search, /answer, /findSimilar"]
+    CLIENT --> MOCK["Smoke-mode mocked responses"]
+    CLIENT --> MODELS["Typed models + normalization"]
+    MODELS --> EVAL["Evaluation + taxonomy + grouped comparison"]
+    MODELS --> ART["Artifact writer"]
+    EVAL --> ART
+    ART --> EXP["experiments/<run-id>/ artifacts"]
+    EXP --> DOCS["README, roadmap, issue tracker, session notes"]
+```
+
+## Repo Map
+
+- `src/exa_demo/`: reusable package modules for client calls, models, config, evaluation, artifacts, reporting, cache, and safety
+- `tests/`: CLI, client, model, artifact, script, and evaluation coverage
+- `benchmarks/insurance_cat_queries.json`: named query suites used by notebook and CLI evaluation
+- `experiments/`: versioned run artifacts written by workflow commands
+- `docs/roadmap.md`: canonical backlog and delivery phases
+- `docs/issue-tracker.md`: GitHub issue-to-roadmap mapping
+- `docs/sessions/`: durable session history
+
 ## What This Repo Evaluates
 
 - Query relevance for CAT-loss / insurance professional discovery
@@ -230,10 +282,11 @@ For a from-scratch architecture critique and refactor roadmap, see `docs/rebuild
 
 ## Roadmap and Delivery History
 
-- Canonical roadmap: `docs/roadmap.md`
-- GitHub issue tracker mapping: `docs/issue-tracker.md`
-- ADR index: `docs/adr/README.md`
-- Session notes: `docs/sessions/README.md`
+- Canonical roadmap: [docs/roadmap.md](docs/roadmap.md)
+- GitHub issue tracker mapping: [docs/issue-tracker.md](docs/issue-tracker.md)
+- ADR index: [docs/adr/README.md](docs/adr/README.md)
+- Session note template: [docs/sessions/README.md](docs/sessions/README.md)
+- Latest implementation session: [docs/sessions/2026-03-18-phase2-parallel-slices.md](docs/sessions/2026-03-18-phase2-parallel-slices.md)
 
 ## Guardrails
 

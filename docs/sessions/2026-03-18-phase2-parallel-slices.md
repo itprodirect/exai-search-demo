@@ -2,7 +2,7 @@
 
 - Date: 2026-03-18
 - Participants: User, Codex, subagents
-- Related roadmap items: `#7`, `#8`, `#9`, `#10`, `#13`, `#16`, `#17`
+- Related roadmap items: `#7`, `#8`, `#9`, `#10`, `#13`, `#16`, `#17`, `#18`
 - Related ADRs: none
 
 ## Context
@@ -31,6 +31,7 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 - `#9 Add structured-output extraction with output_schema`: moved from `Open` to `Closed` after landing the standalone structured-search workflow and schema-driven extraction path.
 - `#10 Add /findSimilar demo for seed-URL discovery`: moved from `Open` to `Closed` after landing the standalone seed-URL discovery workflow and separate normalization path.
 - `#13 Expand domain query suites for PA, CAT law, appraisers, IA, and adjacent industries`: moved to `In progress` after landing named benchmark suites and suite-aware reporting context.
+- `#18 Upgrade README with feature matrix, architecture diagram, and roadmap links`: moved from `Open` to `Closed` after landing a README navigation refresh, capability matrix, and top-level architecture diagram.
 
 ## Docs Touched
 
@@ -59,6 +60,7 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 - `pytest -q` -> passed after structured-search integration with `55 passed`.
 - `pytest -q tests\test_cli.py tests\test_artifacts.py` -> passed for the `find-similar` workflow slice.
 - `pytest -q` -> passed after `/findSimilar` integration with `63 passed`.
+- Docs-only README alignment slice for `#18` -> no code changes, so no additional test run required.
 
 ## Outcome
 
@@ -90,6 +92,9 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
   - `c1624f8` landed the `/findSimilar` core client path, separate normalization models, smoke responses, and focused tests.
   - `c861e94` landed the standalone `find-similar` CLI workflow, `find_similar.json` artifact wiring, and workflow tests.
 - The repo now supports seed-URL discovery as a first-class workflow without forcing similar-result payloads through the ranked-search evaluation contract.
+- Completed the final docs-only slice for `#18`:
+  - README now includes a top-level navigation section, capability matrix, architecture diagram, and stronger links into roadmap and session history.
+- The repo entry point now matches the shipped product surface without requiring readers to infer capabilities from the roadmap or source tree.
 
 ## Next-Session Handoff
 

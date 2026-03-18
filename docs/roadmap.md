@@ -65,7 +65,7 @@ This phase governs how roadmap work is tracked and how delivery history is prese
 | Roadmap item | Goal | Why it matters | Current status | Dependencies | Success criteria | GitHub issue |
 | --- | --- | --- | --- | --- | --- | --- |
 | Governance and delivery tracking | Maintain roadmap, issue tracker, ADRs, and session notes as durable project history | Preserves why decisions were made and what changed each session | `Next` | None | Docs and GitHub stay in sync for roadmap items and active work | [#17](https://github.com/itprodirect/exai-search-demo/issues/17) |
-| README alignment and top-level navigation | Keep the README synchronized with the actual repo baseline, roadmap, and governance docs | Makes the repo entry point accurate for future sessions and contributors | `Next` | Governance conventions | README links, feature framing, and architecture context stay aligned with the roadmap | [#18](https://github.com/itprodirect/exai-search-demo/issues/18) |
+| README alignment and top-level navigation | Keep the README synchronized with the actual repo baseline, roadmap, and governance docs | Makes the repo entry point accurate for future sessions and contributors | `Done` | Governance conventions | README links, feature framing, and architecture context stay aligned with the roadmap | [#18](https://github.com/itprodirect/exai-search-demo/issues/18) |
 
 ## Planned Interfaces and Contracts
 
