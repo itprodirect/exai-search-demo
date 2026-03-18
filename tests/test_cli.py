@@ -5,7 +5,7 @@ import json
 import pytest
 
 from exa_demo.cache import SqliteCacheStore
-from exa_demo.cli import main
+from exa_demo.cli import _apply_search_overrides, build_parser, main
 
 
 def test_search_command_smoke_emits_json_and_artifacts(tmp_path, capsys) -> None:
@@ -215,3 +215,83 @@ def test_eval_command_rejects_invalid_queries_file(tmp_path) -> None:
                 str(bad_queries_file),
             ]
         )
+
+
+def test_search_parser_accepts_additive_deep_controls() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            'search',
+            'forensic engineer insurance expert witness',
+            '--additional-query',
+            'licensed public adjuster Florida',
+            '--additional-query',
+            '  catastrophe claims expert witness  ',
+            '--start-published-date',
+            '2026-01-01',
+            '--end-published-date',
+            '2026-03-01',
+            '--livecrawl',
+            '--deep-search-cost-1-25',
+            '0.012',
+            '--deep-reasoning-search-cost-1-25',
+            '0.015',
+        ]
+    )
+
+    assert args.additional_queries == [
+        'licensed public adjuster Florida',
+        '  catastrophe claims expert witness  ',
+    ]
+    assert args.start_published_date == '2026-01-01'
+    assert args.end_published_date == '2026-03-01'
+    assert args.livecrawl is True
+    assert args.deep_search_cost_1_25 == 0.012
+    assert args.deep_reasoning_search_cost_1_25 == 0.015
+
+
+def test_apply_search_overrides_maps_additive_controls_and_pricing() -> None:
+    from exa_demo.config import default_config, default_pricing
+
+    config = default_config()
+    pricing = default_pricing()
+    args = build_parser().parse_args(
+        [
+            'search',
+            'forensic engineer insurance expert witness',
+            '--additional-query',
+            'licensed public adjuster Florida',
+            '--additional-query',
+            '  catastrophe claims expert witness  ',
+            '--start-published-date',
+            '2026-01-01',
+            '--end-published-date',
+            '2026-03-01',
+            '--livecrawl',
+            '--deep-search-cost-1-25',
+            '0.012',
+            '--deep-search-cost-26-100',
+            '0.03',
+            '--deep-reasoning-search-cost-1-25',
+            '0.015',
+            '--deep-reasoning-search-cost-26-100',
+            '0.04',
+            '--search-cost-1-25',
+            '0.006',
+        ]
+    )
+
+    _apply_search_overrides(config, pricing, args)
+
+    assert config['additional_queries'] == [
+        'licensed public adjuster Florida',
+        'catastrophe claims expert witness',
+    ]
+    assert config['start_published_date'] == '2026-01-01'
+    assert config['end_published_date'] == '2026-03-01'
+    assert config['livecrawl'] is True
+    assert pricing['search_1_25'] == 0.006
+    assert pricing['deep_search_1_25'] == 0.012
+    assert pricing['deep_search_26_100'] == 0.03
+    assert pricing['deep_reasoning_search_1_25'] == 0.015
+    assert pricing['deep_reasoning_search_26_100'] == 0.04

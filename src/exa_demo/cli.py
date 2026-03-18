@@ -261,7 +261,7 @@ def _prepare_runtime(args: argparse.Namespace) -> tuple[Dict[str, Any], Dict[str
     load_dotenv()
     config = default_config()
     pricing = default_pricing()
-    _apply_search_overrides(config, args)
+    _apply_search_overrides(config, pricing, args)
     runtime = _resolve_runtime(args.mode, getattr(args, "run_id", None))
     return config, pricing, runtime
 
@@ -304,7 +304,7 @@ def _cache_store(config: Dict[str, Any]) -> SqliteCacheStore:
     return SqliteCacheStore(config["sqlite_path"], float(config["cache_ttl_hours"]))
 
 
-def _apply_search_overrides(config: Dict[str, Any], args: argparse.Namespace) -> None:
+def _apply_search_overrides(config: Dict[str, Any], pricing: Dict[str, float], args: argparse.Namespace) -> None:
     if getattr(args, "num_results", None):
         config["num_results"] = int(args.num_results)
     if getattr(args, "search_type", None):
@@ -321,12 +321,21 @@ def _apply_search_overrides(config: Dict[str, Any], args: argparse.Namespace) ->
         config["include_domains"] = list(args.include_domains)
     if getattr(args, "exclude_domains", None):
         config["exclude_domains"] = list(args.exclude_domains)
+    if getattr(args, "additional_queries", None):
+        config["additional_queries"] = _clean_string_list(args.additional_queries)
+    if getattr(args, "start_published_date", None):
+        config["start_published_date"] = str(args.start_published_date).strip()
+    if getattr(args, "end_published_date", None):
+        config["end_published_date"] = str(args.end_published_date).strip()
+    if getattr(args, "livecrawl", None):
+        config["livecrawl"] = True
     if hasattr(args, "use_text") and args.use_text:
         config["use_text"] = True
     if hasattr(args, "use_summary") and args.use_summary:
         config["use_summary"] = True
     if hasattr(args, "no_highlights") and args.no_highlights:
         config["use_highlights"] = False
+    _apply_pricing_overrides(pricing, args)
 
 
 def _load_queries(args: argparse.Namespace) -> list[str]:
@@ -376,3 +385,36 @@ def _add_common_search_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--no-highlights", action="store_true", help="Disable highlights in contents.")
     parser.add_argument("--include-domain", dest="include_domains", action="append", default=[], help="Domain to include. May be repeated.")
     parser.add_argument("--exclude-domain", dest="exclude_domains", action="append", default=[], help="Domain to exclude. May be repeated.")
+    parser.add_argument("--additional-query", dest="additional_queries", action="append", default=[], help="Additional query hint for deep search. May be repeated.")
+    parser.add_argument("--start-published-date", help="Optional lower bound for published date filtering (YYYY-MM-DD).")
+    parser.add_argument("--end-published-date", help="Optional upper bound for published date filtering (YYYY-MM-DD).")
+    parser.add_argument("--livecrawl", action="store_true", help="Force live crawl for the request.")
+    parser.add_argument("--search-cost-1-25", type=float, dest="search_cost_1_25", help="Override the base search cost for 1-25 results.")
+    parser.add_argument("--search-cost-26-100", type=float, dest="search_cost_26_100", help="Override the base search cost for 26-100 results.")
+    parser.add_argument("--deep-search-cost-1-25", type=float, dest="deep_search_cost_1_25", help="Override deep search cost for 1-25 results.")
+    parser.add_argument("--deep-search-cost-26-100", type=float, dest="deep_search_cost_26_100", help="Override deep search cost for 26-100 results.")
+    parser.add_argument("--deep-reasoning-search-cost-1-25", type=float, dest="deep_reasoning_search_cost_1_25", help="Override deep-reasoning search cost for 1-25 results.")
+    parser.add_argument("--deep-reasoning-search-cost-26-100", type=float, dest="deep_reasoning_search_cost_26_100", help="Override deep-reasoning search cost for 26-100 results.")
+
+
+def _apply_pricing_overrides(pricing: Dict[str, float], args: argparse.Namespace) -> None:
+    for arg_name, key in [
+        ("search_cost_1_25", "search_1_25"),
+        ("search_cost_26_100", "search_26_100"),
+        ("deep_search_cost_1_25", "deep_search_1_25"),
+        ("deep_search_cost_26_100", "deep_search_26_100"),
+        ("deep_reasoning_search_cost_1_25", "deep_reasoning_search_1_25"),
+        ("deep_reasoning_search_cost_26_100", "deep_reasoning_search_26_100"),
+    ]:
+        value = getattr(args, arg_name, None)
+        if value is not None:
+            pricing[key] = float(value)
+
+
+def _clean_string_list(values: Sequence[Any]) -> list[str]:
+    cleaned: list[str] = []
+    for value in values:
+        text = str(value).strip()
+        if text:
+            cleaned.append(text)
+    return cleaned

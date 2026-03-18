@@ -18,10 +18,8 @@ def estimate_cost_from_pricing(
             "Lower num_results or update PRICING tiers before running."
         )
 
-    if num_results <= 25:
-        search_cost = float(pricing["search_1_25"])
-    else:
-        search_cost = float(pricing["search_26_100"])
+    search_type = str(payload.get("type") or "auto").strip().lower()
+    search_cost = _resolve_search_cost(search_type, num_results, pricing)
 
     contents_cost = 0.0
     contents = payload.get("contents") or {}
@@ -123,3 +121,36 @@ def _has_real_value(value: Any) -> bool:
         return not math.isnan(float(value))
     except (TypeError, ValueError):
         return False
+
+
+def _resolve_search_cost(search_type: str, num_results: int, pricing: Mapping[str, float]) -> float:
+    if num_results <= 25:
+        tier_suffix = "1_25"
+    else:
+        tier_suffix = "26_100"
+
+    candidate_keys = []
+    normalized_type = search_type.replace("-", "_")
+    if normalized_type == "deep_reasoning":
+        candidate_keys.extend(
+            [
+                f"deep_reasoning_search_{tier_suffix}",
+                f"deep_reasoning_{tier_suffix}",
+            ]
+        )
+    if normalized_type in {"deep", "deep_reasoning"}:
+        candidate_keys.extend(
+            [
+                f"deep_search_{tier_suffix}",
+            ]
+        )
+    candidate_keys.append(f"search_{tier_suffix}")
+
+    for key in candidate_keys:
+        if key in pricing:
+            return float(pricing[key])
+
+    raise KeyError(
+        f"Missing pricing for search type '{search_type}' at tier '{tier_suffix}'. "
+        f"Tried: {', '.join(candidate_keys)}"
+    )
