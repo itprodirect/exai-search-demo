@@ -24,6 +24,7 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 
 ## Issues Opened or Updated
 
+- Closed completed GitHub issues after reconciling tracker state with the shipped repo surface: `#1`, `#2`, `#3`, `#4`, `#5`, and `#8`.
 - `#16 Extend CI/security hardening and document integration follow-ons`: moved to `In progress` for pytest-in-CI and script/negative-path coverage work.
 - `#8 Add deep vs deep-reasoning comparison workflow`: moved from `In progress` to `Implemented and pushed` after landing the end-to-end compare command on top of grouped reporting.
 - `#13 Expand domain query suites for PA, CAT law, appraisers, IA, and adjacent industries`: moved to `In progress` after landing named benchmark suites and suite-aware reporting context.
@@ -37,6 +38,7 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 
 ## Tests and Checks Run
 
+- `gh issue list --state open --limit 30` -> confirmed all milestone issues were still open on GitHub before close-out.
 - `pytest -q` -> passed at session start with `20 passed`.
 - `pytest -q tests\test_cli.py tests\test_scripts.py` -> passed after adding negative-path and script coverage.
 - `pytest -q` -> passed after slice-1 changes with `27 passed`.
@@ -51,6 +53,7 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 
 ## Outcome
 
+- Reconciled GitHub issue state with the actual shipped repo state and closed the completed foundation/comparison issues: `#1`, `#2`, `#3`, `#4`, `#5`, and `#8`.
 - Completed slice 1 CI/test hardening in two commits:
   - `92e840f` added CLI negative-path coverage and new script tests.
   - `3ee8f35` landed CI pytest execution, pytest warning cleanup, and the first session-doc updates.
