@@ -275,6 +275,20 @@ def test_structured_search_parser_accepts_schema_file() -> None:
     assert args.search_type == 'deep'
 
 
+def test_find_similar_parser_accepts_seed_url() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            'find-similar',
+            'https://www.merlinlawgroup.com/',
+        ]
+    )
+
+    assert args.command == 'find-similar'
+    assert args.url == 'https://www.merlinlawgroup.com/'
+    assert args.search_type == 'deep'
+
+
 def test_apply_search_overrides_maps_additive_controls_and_pricing() -> None:
     from exa_demo.config import default_config, default_pricing
 
@@ -497,6 +511,66 @@ def test_structured_search_command_live_requires_api_key(tmp_path, monkeypatch) 
                 'independent adjuster florida catastrophe claims',
                 '--schema-file',
                 str(schema_file),
+                '--mode',
+                'live',
+                '--sqlite-path',
+                str(sqlite_path),
+                '--artifact-dir',
+                str(artifact_dir),
+            ]
+        )
+
+
+def test_find_similar_command_smoke_emits_json_and_artifact(tmp_path, capsys) -> None:
+    sqlite_path = tmp_path / 'cache.sqlite'
+    artifact_dir = tmp_path / 'artifacts'
+
+    exit_code = main(
+        [
+            'find-similar',
+            'https://www.merlinlawgroup.com/',
+            '--mode',
+            'smoke',
+            '--run-id',
+            'find-similar-run',
+            '--sqlite-path',
+            str(sqlite_path),
+            '--artifact-dir',
+            str(artifact_dir),
+            '--json',
+        ]
+    )
+
+    output = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert output['workflow'] == 'find-similar'
+    assert output['run_id'] == 'find-similar-run'
+    assert output['seed_url'] == 'https://www.merlinlawgroup.com/'
+    assert output['result_count'] == 3
+    assert output['top_result']['title'] == 'Florida Insurance Litigation Firm'
+    assert (artifact_dir / 'find-similar-run' / 'find_similar.json').exists()
+    assert (artifact_dir / 'find-similar-run' / 'summary.json').exists()
+    artifact_payload = json.loads((artifact_dir / 'find-similar-run' / 'find_similar.json').read_text(encoding='utf-8'))
+    assert artifact_payload['seed_url'] == 'https://www.merlinlawgroup.com/'
+    assert artifact_payload['result_count'] == 3
+    assert artifact_payload['top_result']['title'] == 'Florida Insurance Litigation Firm'
+
+
+def test_find_similar_command_live_requires_api_key(tmp_path, monkeypatch) -> None:
+    sqlite_path = tmp_path / 'cache.sqlite'
+    artifact_dir = tmp_path / 'artifacts'
+
+    from exa_demo import cli as cli_module
+
+    monkeypatch.setattr(cli_module, 'load_dotenv', lambda: None)
+    monkeypatch.delenv('EXA_API_KEY', raising=False)
+
+    with pytest.raises(RuntimeError, match='Missing EXA_API_KEY'):
+        main(
+            [
+                'find-similar',
+                'https://www.merlinlawgroup.com/',
                 '--mode',
                 'live',
                 '--sqlite-path',

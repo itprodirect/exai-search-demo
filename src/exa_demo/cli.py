@@ -69,6 +69,17 @@ def build_parser() -> argparse.ArgumentParser:
     answer_parser.add_argument("--json", action="store_true", dest="as_json", help="Emit structured JSON instead of a text summary.")
     answer_parser.set_defaults(handler=run_answer_command)
 
+    find_similar_parser = subparsers.add_parser(
+        "find-similar",
+        help="Run a seed-URL similarity query.",
+    )
+    _add_common_runtime_args(find_similar_parser)
+    _add_common_search_args(find_similar_parser)
+    find_similar_parser.set_defaults(search_type="deep")
+    find_similar_parser.add_argument("url", help="Seed URL to send to Exa.")
+    find_similar_parser.add_argument("--json", action="store_true", dest="as_json", help="Emit structured JSON instead of a text summary.")
+    find_similar_parser.set_defaults(handler=run_find_similar_command)
+
     structured_parser = subparsers.add_parser(
         "structured-search",
         help="Run a structured-output search query against a JSON schema.",
@@ -292,6 +303,102 @@ def run_answer_command(args: argparse.Namespace) -> int:
     if answer_payload["citations"]:
         print("")
         print(pd.DataFrame(answer_payload["citations"]).to_markdown(index=False))
+    return 0
+
+
+def run_find_similar_command(args: argparse.Namespace) -> int:
+    config, pricing, runtime = _prepare_runtime(args)
+    cache_store = _cache_store(config)
+    request_payload = _build_find_similar_request_payload(args.url, config)
+    estimated_cost = estimate_cost_from_pricing(
+        request_payload,
+        int(request_payload.get("numResults") or config["num_results"]),
+        pricing,
+        int(config["max_supported_results_for_estimate"]),
+    )
+
+    response_json, cache_hit = cache_store.get_or_set(
+        request_payload,
+        estimated_cost,
+        run_id=runtime.run_id,
+        budget_cap_usd=float(config["budget_cap_usd"]),
+        fetcher=lambda payload: _find_similar_http_call(
+            payload,
+            exa_api_key=runtime.exa_api_key,
+            smoke_no_network=runtime.smoke_no_network,
+            config=config,
+        ),
+    )
+
+    find_similar_payload = _build_find_similar_artifact(
+        args.url,
+        request_payload=request_payload,
+        response_json=response_json,
+        cache_hit=cache_hit,
+        estimated_cost_usd=estimated_cost,
+    )
+
+    summary = cache_store.spend_so_far(run_id=runtime.run_id)
+    writer = ExperimentArtifactWriter(
+        run_id=runtime.run_id,
+        config=config,
+        pricing=pricing,
+        run_context={"workflow": "find-similar"},
+        base_dir=args.artifact_dir,
+    )
+    writer.write_json_artifact("find_similar.json", find_similar_payload)
+    writer.write_summary(
+        summary,
+        projections={
+            "projection_basis": "observed_avg_uncached",
+            "unit_cost_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0),
+            "projected_100_queries_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0) * 100,
+            "projected_1000_queries_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0) * 1000,
+            "projected_10000_queries_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0) * 10000,
+        },
+        recommendation_data={"headline_recommendation": "Use for seed-url discovery workflows"},
+        qualitative_notes=[
+            "Find-similar workflow active: the response payload is stored in find_similar.json.",
+            "Smoke mode active: similar-page results are mocked and costs are zero.",
+        ] if runtime.smoke_no_network else [
+            "Find-similar workflow active: the response payload is stored in find_similar.json.",
+        ],
+        extra={
+            "workflow": "find-similar",
+            "find_similar": {
+                "seed_url": args.url,
+                "cache_hit": cache_hit,
+                "result_count": find_similar_payload["result_count"],
+                "top_result_title": find_similar_payload["top_result"]["title"] if find_similar_payload["top_result"] else None,
+            },
+        },
+    )
+
+    payload = {
+        "workflow": "find-similar",
+        "run_id": runtime.run_id,
+        "artifact_dir": str(writer.artifact_dir),
+        "seed_url": args.url,
+        "cache_hit": cache_hit,
+        "request_id": find_similar_payload.get("request_id"),
+        "result_count": find_similar_payload["result_count"],
+        "top_result": find_similar_payload.get("top_result"),
+        "results": find_similar_payload.get("results"),
+        "summary": summary,
+    }
+    if args.as_json:
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    print(f"run_id: {runtime.run_id}")
+    print(f"artifact_dir: {writer.artifact_dir}")
+    print(f"seed_url: {args.url}")
+    print(f"cache_hit: {cache_hit}")
+    print(f"result_count: {find_similar_payload['result_count']}")
+    print(f"request_id: {find_similar_payload.get('request_id')}")
+    if find_similar_payload.get("top_result"):
+        print("top_result:")
+        print(json.dumps(find_similar_payload["top_result"], indent=2, sort_keys=True))
     return 0
 
 
@@ -798,6 +905,33 @@ def _build_structured_search_request_payload(
     return payload
 
 
+def _build_find_similar_request_payload(url: str, config: Mapping[str, Any]) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "url": url,
+        "numResults": int(config["num_results"]),
+        "type": str(config.get("search_type") or "deep"),
+    }
+    contents: Dict[str, Any] = {}
+    if config.get("use_text"):
+        contents["text"] = True
+    if config.get("use_summary"):
+        contents["summary"] = {
+            "query": f"Summarize pages similar to {url}."
+        }
+    if config.get("use_highlights", True):
+        contents["highlights"] = {
+            "highlightsPerUrl": int(config["highlights_per_url"]),
+            "numSentences": int(config["highlight_num_sentences"]),
+        }
+    if contents:
+        payload["contents"] = contents
+    if config.get("include_domains"):
+        payload["includeDomains"] = list(config["include_domains"])
+    if config.get("exclude_domains"):
+        payload["excludeDomains"] = list(config["exclude_domains"])
+    return payload
+
+
 def _answer_http_call(
     payload: Dict[str, Any],
     *,
@@ -814,6 +948,31 @@ def _answer_http_call(
     headers = {"x-api-key": exa_api_key, "Content-Type": "application/json"}
     response = requests.post(
         EXA_ANSWER_ENDPOINT,
+        headers=headers,
+        json=payload,
+        timeout=timeout,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def _find_similar_http_call(
+    payload: Dict[str, Any],
+    *,
+    exa_api_key: str,
+    smoke_no_network: bool,
+    config: Mapping[str, Any],
+    timeout: int = 60,
+) -> Dict[str, Any]:
+    if smoke_no_network:
+        return _mock_find_similar_response(payload)
+
+    if not exa_api_key:
+        raise RuntimeError("Missing EXA_API_KEY for live Exa find-similar request.")
+
+    headers = {"x-api-key": exa_api_key, "Content-Type": "application/json"}
+    response = requests.post(
+        _resolve_exa_endpoint(str(config["exa_endpoint"]), endpoint_name="findSimilar"),
         headers=headers,
         json=payload,
         timeout=timeout,
@@ -873,6 +1032,38 @@ def _mock_answer_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _mock_find_similar_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
+    seed_url = str(payload.get("url") or "")
+    slug = seed_url[:24].strip().lower().replace(" ", "-") or "find-similar"
+    similar_results = [
+        {
+            "title": "Florida Insurance Litigation Firm",
+            "url": "https://example.com/florida-insurance-litigation-firm",
+            "snippet": "Mock result for seed-url discovery and competitor analysis.",
+            "score": 0.98,
+        },
+        {
+            "title": "Public Adjuster and Catastrophe Claims Team",
+            "url": "https://example.com/public-adjuster-catastrophe-claims",
+            "snippet": "Mock result for expert discovery and similar professional pages.",
+            "score": 0.94,
+        },
+        {
+            "title": "Property Insurance Appraisal Resources",
+            "url": "https://example.com/property-insurance-appraisal-resources",
+            "snippet": "Mock result for content discovery around appraisal and coverage disputes.",
+            "score": 0.91,
+        },
+    ]
+    return {
+        "requestId": f"smoke-{slug}",
+        "resolvedSearchType": str(payload.get("type") or "deep"),
+        "results": similar_results,
+        "costDollars": {"search": 0.0, "contents": 0.0, "total": 0.0},
+        "_smokeMode": True,
+    }
+
+
 def _mock_structured_search_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
     query = str(payload.get("query") or "")
     schema = payload.get("outputSchema") if isinstance(payload.get("outputSchema"), Mapping) else {}
@@ -902,6 +1093,29 @@ def _mock_structured_search_response(payload: Mapping[str, Any]) -> Dict[str, An
         "results": [],
         "costDollars": {"search": 0.0, "contents": 0.0, "total": 0.0},
         "_smokeMode": True,
+    }
+
+
+def _build_find_similar_artifact(
+    seed_url: str,
+    *,
+    request_payload: Mapping[str, Any],
+    response_json: Mapping[str, Any],
+    cache_hit: bool,
+    estimated_cost_usd: float,
+) -> Dict[str, Any]:
+    results = _normalize_find_similar_results(response_json.get("results"))
+    return {
+        "seed_url": seed_url,
+        "request_payload": json.loads(json.dumps(dict(request_payload), ensure_ascii=False, default=str)),
+        "response": json.loads(json.dumps(dict(response_json), ensure_ascii=False, default=str)),
+        "request_id": response_json.get("requestId") if isinstance(response_json, Mapping) else None,
+        "cache_hit": cache_hit,
+        "estimated_cost_usd": float(estimated_cost_usd),
+        "actual_cost_usd": _find_similar_actual_cost(response_json),
+        "result_count": len(results),
+        "results": results,
+        "top_result": results[0] if results else None,
     }
 
 
@@ -971,6 +1185,25 @@ def _normalize_citations(value: Any) -> list[Dict[str, Any]]:
     return citations
 
 
+def _normalize_find_similar_results(value: Any) -> list[Dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+
+    results: list[Dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, Mapping):
+            continue
+        results.append(
+            {
+                "title": str(item.get("title") or "").strip(),
+                "url": str(item.get("url") or "").strip(),
+                "snippet": str(item.get("snippet") or item.get("text") or "").strip(),
+                "score": _coerce_optional_float(item.get("score")),
+            }
+        )
+    return results
+
+
 def _answer_actual_cost(response_json: Mapping[str, Any]) -> float:
     cost = response_json.get("costDollars")
     if isinstance(cost, Mapping):
@@ -983,6 +1216,10 @@ def _answer_actual_cost(response_json: Mapping[str, Any]) -> float:
 
 
 def _structured_search_actual_cost(response_json: Mapping[str, Any]) -> float:
+    return _answer_actual_cost(response_json)
+
+
+def _find_similar_actual_cost(response_json: Mapping[str, Any]) -> float:
     return _answer_actual_cost(response_json)
 
 
@@ -1020,3 +1257,12 @@ def _resolve_exa_endpoint(base_url: str, *, endpoint_name: str = "search") -> st
     if trimmed.endswith("/search"):
         return trimmed[: -len("/search")] + f"/{endpoint_name}"
     return f"{trimmed}/{endpoint_name}"
+
+
+def _coerce_optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None

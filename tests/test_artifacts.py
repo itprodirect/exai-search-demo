@@ -130,3 +130,32 @@ def test_experiment_artifact_writer_writes_structured_output_artifact(tmp_path) 
     assert path.name == 'structured_output.json'
     assert payload['query'] == 'independent adjuster florida catastrophe claims'
     assert payload['structured_output']['schema_title'] == 'Structured Professionals'
+
+
+def test_experiment_artifact_writer_writes_find_similar_artifact(tmp_path) -> None:
+    writer = ExperimentArtifactWriter(
+        run_id='find-similar-run',
+        config={'mode': 'smoke'},
+        pricing={'search_1_25': 0.005},
+        run_context={'workflow': 'find-similar'},
+        base_dir=tmp_path,
+    )
+
+    path = writer.write_json_artifact(
+        'find_similar.json',
+        {
+            'seed_url': 'https://www.merlinlawgroup.com/',
+            'results': [
+                {
+                    'title': 'Florida Insurance Litigation Firm',
+                    'url': 'https://example.com/florida-insurance-litigation-firm',
+                    'snippet': 'Mock result.',
+                }
+            ],
+        },
+    )
+
+    payload = json.loads(path.read_text(encoding='utf-8'))
+    assert path.name == 'find_similar.json'
+    assert payload['seed_url'] == 'https://www.merlinlawgroup.com/'
+    assert payload['results'][0]['title'] == 'Florida Insurance Litigation Firm'
