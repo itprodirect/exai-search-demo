@@ -2,7 +2,7 @@
 
 - Date: 2026-03-18
 - Participants: User, Codex, subagents
-- Related roadmap items: `#7`, `#8`, `#13`, `#16`, `#17`
+- Related roadmap items: `#7`, `#8`, `#9`, `#13`, `#16`, `#17`
 - Related ADRs: none
 
 ## Context
@@ -25,9 +25,10 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 ## Issues Opened or Updated
 
 - Closed completed GitHub issues after reconciling tracker state with the shipped repo surface: `#1`, `#2`, `#3`, `#4`, `#5`, and `#8`.
-- `#7 Add /answer endpoint demo and cited-answer evaluation`: moved to `Implemented and pushed` after landing the standalone `answer` workflow.
+- `#7 Add /answer endpoint demo and cited-answer evaluation`: moved from `Implemented and pushed` to `Closed` after the repo tracker was reconciled with the shipped `/answer` workflow.
 - `#16 Extend CI/security hardening and document integration follow-ons`: moved to `In progress` for pytest-in-CI and script/negative-path coverage work.
 - `#8 Add deep vs deep-reasoning comparison workflow`: moved from `In progress` to `Implemented and pushed` after landing the end-to-end compare command on top of grouped reporting.
+- `#9 Add structured-output extraction with output_schema`: moved from `Open` to `Closed` after landing the standalone structured-search workflow and schema-driven extraction path.
 - `#13 Expand domain query suites for PA, CAT law, appraisers, IA, and adjacent industries`: moved to `In progress` after landing named benchmark suites and suite-aware reporting context.
 
 ## Docs Touched
@@ -53,6 +54,8 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
 - `pytest -q` -> passed after the workflow slice with `39 passed`.
 - `pytest -q tests\test_client.py tests\test_models.py tests\test_cli.py tests\test_artifacts.py` -> passed for the integrated `/answer` workflow.
 - `pytest -q` -> passed after `/answer` integration with `46 passed`.
+- `pytest -q tests\test_client.py tests\test_models.py` -> passed for the structured-search core path with `16 passed`.
+- `pytest -q` -> passed after structured-search integration with `55 passed`.
 
 ## Outcome
 
@@ -76,8 +79,12 @@ Kick off a slice-based implementation session that keeps code, tests, docs, comm
   - `9acbeab` landed the standalone `answer` command and `answer.json` artifact wiring.
   - A follow-up local commit from this session lands the `/answer` client path, answer-specific models, smoke responses, and tests.
 - The repo now supports cited-answer runs as a first-class workflow without forcing them through ranked-search evaluation semantics.
+- Completed the next product slice for `#9`:
+  - `9be7409` landed the structured-search core client path, typed structured-output models, smoke responses, and focused tests.
+  - `20cc69a` landed the standalone `structured-search` CLI workflow, `structured_output.json` artifact wiring, and workflow tests.
+- The repo now supports schema-driven extraction as a first-class workflow without forcing structured payloads through the ranked-search `results.jsonl` evaluation contract.
 
 ## Next-Session Handoff
 
-- Decide whether to add category/date-filter guardrails for unsupported `people`/`company` combinations before expanding into `/answer` or structured-output work.
-- Structured-output deep search is now the cleanest next product-facing slice.
+- Decide whether `/findSimilar` or `/research` is the next highest-alpha API slice now that `/answer`, deep-vs-deep-reasoning, and structured-search are all shipped.
+- Keep reconciling GitHub issue state and docs as remaining domain and repo-ops slices land.

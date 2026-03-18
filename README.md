@@ -104,6 +104,7 @@ Notebook flow is intentionally fixed to 9 cells:
 ```powershell
 python -m exa_demo search "forensic engineer insurance expert witness" --mode smoke --json
 python -m exa_demo answer "What is the Florida appraisal clause dispute process?" --mode smoke --json
+python -m exa_demo structured-search "independent adjuster florida catastrophe claims" --schema-file .\path\to\structured-schema.json --mode smoke --json
 python -m exa_demo search "Florida property insurance appraisal clause" --type deep --additional-query "Florida appraisal dispute statute" --start-published-date 2025-01-01 --livecrawl --json
 python -m exa_demo eval --mode smoke --suite forensic_and_damage_engineering --limit 5 --json
 python -m exa_demo compare-search-types --mode smoke --suite forensic_and_damage_engineering --baseline-type deep --candidate-type deep-reasoning --limit 5 --json
@@ -113,6 +114,7 @@ python -m exa_demo budget --run-id demo-2026-03 --json
 
 The search and eval commands write the same experiments/<RUN_ID>/ artifact bundle as the notebook flow.
 The `answer` command writes the same run directory and adds an `answer.json` artifact containing the cited-answer payload.
+The `structured-search` command runs a schema-driven deep search and writes a `structured_output.json` artifact containing the extracted structured payload.
 Deep-search-oriented request shaping is now exposed directly in the CLI with additive flags such as `--additional-query`, `--start-published-date`, `--end-published-date`, and `--livecrawl`.
 Search cost estimation can also be overridden from the CLI for search-type experiments with flags such as `--deep-search-cost-1-25` and `--deep-reasoning-search-cost-1-25`.
 
@@ -121,6 +123,7 @@ Use `--compare-to-run-id` for before/after deltas across quality and failure rat
 When comparison is enabled, the run also writes a human-readable `experiments/<RUN_ID>/comparison.md` report with grouped query outcomes when suite context is available.
 `compare-search-types` is the end-to-end workflow for running the same suite against two search types and emitting the grouped comparison bundle in one command.
 `answer` is a separate cited-answer workflow and intentionally does not reuse the ranked-search evaluation taxonomy.
+`structured-search` is a separate schema-driven extraction workflow and intentionally stores the raw structured payload outside the ranked-search `results.jsonl` path.
 
 ## Benchmark Fixture
 
@@ -138,6 +141,11 @@ Each notebook run now writes a versioned artifact bundle under `experiments/<RUN
 - `queries.jsonl`
 - `results.jsonl`
 - `summary.json`
+
+Workflow-specific commands may also add:
+
+- `answer.json`
+- `structured_output.json`
 
 Smoke-mode runs keep the same artifact shape, but with mocked results and zero spend.
 
