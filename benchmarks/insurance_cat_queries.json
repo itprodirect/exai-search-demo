@@ -34,7 +34,23 @@
       "emergency board-up service hurricane Florida certified",
       "claims management software property insurance",
       "AI property damage assessment insurtech",
-      "civil engineer structural damage assessment hurricane expert witness site:linkedin.com"
+      "civil engineer structural damage assessment hurricane expert witness site:linkedin.com",
+      "hurricane board-up contractor dispatch Florida",
+      "water extraction mitigation response vendor",
+      "mold remediation catastrophe contractor insurance claim expert witness site:linkedin.com",
+      "drying restoration vendor hurricane response Florida",
+      "contents restoration business interruption consultant",
+      "carrier preferred vendor network restoration",
+      "third party administrator catastrophe claims Florida",
+      "managed repair program contractor network insurance",
+      "Florida insurance legislative session homeowners premiums",
+      "Florida Office of Insurance Regulation market conduct bulletin",
+      "NAIC homeowners insurance model law update",
+      "Florida surplus lines market update",
+      "catastrophe reinsurance market outlook homeowners insurance",
+      "Florida property insurance rate filing news",
+      "claims technology underwriting workflow insurance",
+      "property insurance vendor performance scorecard"
     ],
     "public_adjusters": [
       "public adjuster licensing requirements Florida DFS",
@@ -99,6 +115,120 @@
       "claims management software property insurance",
       "AI property damage assessment insurtech",
       "civil engineer structural damage assessment hurricane expert witness site:linkedin.com"
-    ]
+    ],
+    "restoration_and_mitigation": {
+      "description": "Field-service vendors and mitigation specialists involved in post-loss response.",
+      "focus": "vendor discovery",
+      "queries": [
+        {
+          "text": "hurricane board-up contractor dispatch Florida",
+          "topic": "restoration and mitigation",
+          "intent": "vendor discovery",
+          "category": "company"
+        },
+        {
+          "text": "water extraction mitigation response vendor",
+          "topic": "restoration and mitigation",
+          "intent": "vendor discovery",
+          "category": "company"
+        },
+        {
+          "text": "mold remediation catastrophe contractor insurance claim expert witness site:linkedin.com",
+          "topic": "restoration and mitigation",
+          "intent": "expert discovery",
+          "category": "people"
+        },
+        {
+          "text": "drying restoration vendor hurricane response Florida",
+          "topic": "restoration and mitigation",
+          "intent": "vendor discovery",
+          "category": "company"
+        },
+        {
+          "text": "contents restoration business interruption consultant",
+          "topic": "restoration and mitigation",
+          "intent": "vendor discovery",
+          "category": "people"
+        }
+      ]
+    },
+    "carrier_tpa_and_vendor_ecosystem": {
+      "description": "Carriers, TPAs, software vendors, and managed-repair ecosystem discovery.",
+      "focus": "firm discovery",
+      "queries": [
+        {
+          "text": "claims management software property insurance",
+          "topic": "vendor ecosystem",
+          "intent": "software discovery",
+          "category": "company"
+        },
+        {
+          "text": "AI property damage assessment insurtech",
+          "topic": "vendor ecosystem",
+          "intent": "software discovery",
+          "category": "company"
+        },
+        {
+          "text": "carrier preferred vendor network restoration",
+          "topic": "vendor ecosystem",
+          "intent": "vendor discovery",
+          "category": "company"
+        },
+        {
+          "text": "third party administrator catastrophe claims Florida",
+          "topic": "vendor ecosystem",
+          "intent": "firm discovery",
+          "category": "company"
+        },
+        {
+          "text": "managed repair program contractor network insurance",
+          "topic": "vendor ecosystem",
+          "intent": "firm discovery",
+          "category": "company"
+        }
+      ]
+    },
+    "regulatory_legislative_and_market_news": {
+      "description": "Market and regulatory monitoring for Florida insurance and adjacent coverage changes.",
+      "focus": "market watch",
+      "queries": [
+        {
+          "text": "Florida insurance legislative session homeowners premiums",
+          "topic": "regulatory and market news",
+          "intent": "market watch",
+          "category": "news"
+        },
+        {
+          "text": "Florida Office of Insurance Regulation market conduct bulletin",
+          "topic": "regulatory and market news",
+          "intent": "market watch",
+          "category": "news"
+        },
+        {
+          "text": "NAIC homeowners insurance model law update",
+          "topic": "regulatory and market news",
+          "intent": "market watch",
+          "category": "news"
+        },
+        {
+          "text": "Florida surplus lines market update",
+          "topic": "regulatory and market news",
+          "intent": "market watch",
+          "category": "news"
+        },
+        {
+          "text": "catastrophe reinsurance market outlook homeowners insurance",
+          "topic": "regulatory and market news",
+          "intent": "market watch",
+          "category": "news"
+        },
+        {
+          "text": "Florida property insurance rate filing news",
+          "topic": "regulatory and market news",
+          "intent": "market watch",
+          "category": "news"
+        }
+      ]
+    }
   }
 }

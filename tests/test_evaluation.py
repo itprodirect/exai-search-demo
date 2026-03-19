@@ -8,6 +8,7 @@ from exa_demo.evaluation import (
     DEFAULT_RELEVANCE_KEYWORDS,
     evaluate_batch_queries,
     load_benchmark_queries,
+    load_benchmark_suite_definitions,
     load_benchmark_suites,
 )
 from exa_demo.models import QueryEvaluationRecord
@@ -28,9 +29,9 @@ class FakeMeta:
 def test_load_benchmark_queries_matches_current_fixture() -> None:
     queries = load_benchmark_queries()
 
-    assert len(queries) == 33
+    assert len(queries) == 49
     assert queries[0].startswith("public adjuster licensing requirements Florida")
-    assert queries[-1].startswith("civil engineer structural damage assessment")
+    assert queries[-1].startswith("property insurance vendor performance scorecard")
 
 
 def test_load_benchmark_queries_can_target_named_suite() -> None:
@@ -43,9 +44,13 @@ def test_load_benchmark_queries_can_target_named_suite() -> None:
     legacy_adjuster_queries = load_benchmark_queries(suite="adjusters_appraisers_and_restoration")
     adjuster_queries = load_benchmark_queries(suite="independent_adjusters")
     adjacent_queries = load_benchmark_queries(suite="adjacent_industries")
+    restoration_queries = load_benchmark_queries(suite="restoration_and_mitigation")
+    vendor_queries = load_benchmark_queries(suite="carrier_tpa_and_vendor_ecosystem")
+    market_queries = load_benchmark_queries(suite="regulatory_legislative_and_market_news")
+    suite_definitions = load_benchmark_suite_definitions()
     suites = load_benchmark_suites()
 
-    assert len(all_queries) == 33
+    assert len(all_queries) == 49
     assert len(public_adjuster_queries) == 5
     assert len(forensic_queries) == 5
     assert len(coverage_queries) == 8
@@ -54,6 +59,9 @@ def test_load_benchmark_queries_can_target_named_suite() -> None:
     assert len(legacy_adjuster_queries) == 6
     assert len(adjuster_queries) == 4
     assert len(adjacent_queries) == 9
+    assert len(restoration_queries) == 5
+    assert len(vendor_queries) == 5
+    assert len(market_queries) == 6
     assert suites["public_adjusters"][0].startswith("public adjuster licensing requirements")
     assert suites["forensic_and_damage_engineering"][0].startswith("forensic engineer wind damage")
     assert suites["cat_law_and_coverage"][0].startswith("policyholder attorney")
@@ -62,6 +70,12 @@ def test_load_benchmark_queries_can_target_named_suite() -> None:
     assert suites["adjusters_appraisers_and_restoration"][0].startswith("insurance appraisal umpire")
     assert suites["independent_adjusters"][0].startswith("licensed independent adjuster")
     assert suites["adjacent_industries"][-1].startswith("civil engineer structural")
+    assert suites["restoration_and_mitigation"][0].startswith("hurricane board-up contractor")
+    assert suites["carrier_tpa_and_vendor_ecosystem"][1].startswith("AI property damage assessment")
+    assert suites["regulatory_legislative_and_market_news"][0].startswith("Florida insurance legislative session")
+    assert suite_definitions["restoration_and_mitigation"]["description"] == "Field-service vendors and mitigation specialists involved in post-loss response."
+    assert suite_definitions["carrier_tpa_and_vendor_ecosystem"]["metadata"]["focus"] == "firm discovery"
+    assert suite_definitions["regulatory_legislative_and_market_news"]["queries"][0]["category"] == "news"
 
 
 def test_load_benchmark_queries_supports_legacy_list_fixtures(tmp_path) -> None:
@@ -71,6 +85,66 @@ def test_load_benchmark_queries_supports_legacy_list_fixtures(tmp_path) -> None:
 
     assert load_benchmark_suites(legacy_path) == {"default": legacy_queries}
     assert load_benchmark_queries(legacy_path) == legacy_queries
+    assert load_benchmark_suite_definitions(legacy_path)["default"]["queries"] == [
+        {"text": "one query"},
+        {"text": "two query"},
+    ]
+
+
+def test_load_benchmark_queries_supports_rich_suite_definitions(tmp_path) -> None:
+    rich_path = tmp_path / "rich_queries.json"
+    rich_path.write_text(
+        json.dumps(
+            {
+                "default_suite": "all",
+                "suites": {
+                    "all": {
+                        "description": "Rich mixed-format suite",
+                        "audience": "research",
+                        "queries": [
+                            {
+                                "text": "alpha query",
+                                "topic": "people",
+                                "intent": "discover",
+                                "category": "people",
+                            },
+                            "beta query",
+                        ],
+                    },
+                    "market_watch": {
+                        "description": "Market watch suite",
+                        "focus": "news",
+                        "queries": [
+                            {
+                                "query": "gamma query",
+                                "topic": "news",
+                                "intent": "monitor",
+                                "category": "news",
+                            }
+                        ],
+                    },
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    suite_definitions = load_benchmark_suite_definitions(rich_path)
+
+    assert suite_definitions["all"]["description"] == "Rich mixed-format suite"
+    assert suite_definitions["all"]["metadata"]["audience"] == "research"
+    assert suite_definitions["all"]["queries"][0]["text"] == "alpha query"
+    assert suite_definitions["all"]["queries"][0]["topic"] == "people"
+    assert suite_definitions["all"]["queries"][1]["text"] == "beta query"
+    assert suite_definitions["market_watch"]["metadata"]["focus"] == "news"
+    assert suite_definitions["market_watch"]["queries"][0]["text"] == "gamma query"
+    assert suite_definitions["market_watch"]["queries"][0]["category"] == "news"
+    assert load_benchmark_suites(rich_path) == {
+        "all": ["alpha query", "beta query"],
+        "market_watch": ["gamma query"],
+    }
+    assert load_benchmark_queries(rich_path) == ["alpha query", "beta query"]
+    assert load_benchmark_queries(rich_path, suite="market_watch") == ["gamma query"]
 
 
 def test_evaluate_batch_queries_builds_expected_flags() -> None:
