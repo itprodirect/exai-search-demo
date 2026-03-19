@@ -1,0 +1,57 @@
+name: live-validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Execution mode"
+        required: true
+        default: "live"
+        type: choice
+        options:
+          - live
+          - smoke
+      include_comparison:
+        description: "Also run compare-search-types"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  live-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run bounded validation
+        env:
+          EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+          VALIDATION_MODE: ${{ inputs.mode }}
+          INCLUDE_COMPARISON: ${{ inputs.include_comparison }}
+        run: |
+          if [ "$INCLUDE_COMPARISON" = "true" ]; then
+            python scripts/run_live_validation.py --mode "$VALIDATION_MODE" --include-comparison
+          else
+            python scripts/run_live_validation.py --mode "$VALIDATION_MODE"
+          fi
+
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-validation-artifacts
+          path: live-validation-artifacts/
+          if-no-files-found: warn

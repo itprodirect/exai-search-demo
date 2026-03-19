@@ -1,0 +1,23 @@
+{
+  "title": "Structured Professionals",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string"
+    },
+    "professionals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -9,3 +9,4 @@ venv/
 # Local generated artifacts
 credibility_pass_results.csv
 exa_cache.sqlite.bak.*
+live-validation-artifacts/

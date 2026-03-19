@@ -4,6 +4,8 @@ This page is the docs entrypoint for the shipped workflows. It stays command-fir
 
 Default to `--mode smoke` while developing or validating commands locally. Treat `--mode live` as a deliberate manual validation path that can incur billing and still requires human review.
 
+When you need a bounded real-API validation pass across the shipped workflows, use [`scripts/run_live_validation.py`](../scripts/run_live_validation.py) locally in smoke mode or the manual GitHub Actions workflow in [`.github/workflows/live-validation.yml`](../.github/workflows/live-validation.yml).
+
 ## Discovery
 
 `search` is the default ranked-discovery workflow for CAT-loss and insurance people search. Use it when you want a relevance-ranked result set and the standard `results.jsonl` plus `summary.json` artifact bundle.

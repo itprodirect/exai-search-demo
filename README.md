@@ -17,6 +17,7 @@ This repo is intentionally in **minimal mode**:
 - [Experiment artifacts](#experiment-artifacts)
 - [Demo gallery](#demo-gallery)
 - [Integration boundaries](#integration-boundaries)
+- [Manual Live Validation](#manual-live-validation)
 - [Roadmap and delivery history](#roadmap-and-delivery-history)
 - [Guardrails](#guardrails)
 
@@ -241,6 +242,21 @@ The gallery is deliberately command-first. It points at the exact entrypoint and
 
 Use [docs/integration-boundaries.md](docs/integration-boundaries.md) for the current smoke-vs-live execution contract, artifact expectations, and delivery rules.
 
+## Manual Live Validation
+
+Use the manual GitHub Actions workflow in [.github/workflows/live-validation.yml](.github/workflows/live-validation.yml) when you want a deliberate real-API validation pass against the shipped CLI workflows.
+
+Local dry run:
+
+```powershell
+python .\scripts\run_live_validation.py --mode smoke
+```
+
+Guidance:
+- default to `--mode smoke` locally unless you are intentionally validating live API behavior
+- the manual workflow is bounded by design and uploads runtime artifacts for review
+- `--include-comparison` is optional because it is materially more expensive than the default endpoint checks
+
 ## Cache + Budget Behavior
 
 - Requests are cached in `exa_cache.sqlite` by payload hash.
@@ -332,7 +348,7 @@ For a from-scratch architecture critique and refactor roadmap, see `docs/rebuild
 - GitHub issue tracker mapping: [docs/issue-tracker.md](docs/issue-tracker.md)
 - ADR index: [docs/adr/README.md](docs/adr/README.md)
 - Session note template: [docs/sessions/README.md](docs/sessions/README.md)
-- Latest implementation session: [docs/sessions/2026-03-19-phase3-export-outputs-and-smoke-rails.md](docs/sessions/2026-03-19-phase3-export-outputs-and-smoke-rails.md)
+- Latest implementation session: [docs/sessions/2026-03-19-phase3-manual-live-validation.md](docs/sessions/2026-03-19-phase3-manual-live-validation.md)
 
 ## Guardrails
 

@@ -25,10 +25,13 @@ This repo is designed to stay safe-by-default while still supporting deliberate 
 - CI should stay smoke-only by default.
 - CI is allowed to run lint, pytest, and the notebook smoke runner.
 - Live API validation should remain an explicit manual workflow until its scope, spend guardrails, and secrets handling are documented more tightly.
+- The manual live-validation path is [`.github/workflows/live-validation.yml`](../.github/workflows/live-validation.yml), backed by [`scripts/run_live_validation.py`](../scripts/run_live_validation.py).
+- The runner writes a `validation_summary.json` file plus the underlying workflow artifacts for review; these outputs are runtime artifacts and should not be committed.
 
 ## Cost and Safety Boundary
 
 - Cached reruns should not re-bill.
 - Live validation should stay bounded to small, intentional runs.
+- Comparison validation should stay opt-in because it performs multiple real search calls.
 - Public/professional info only.
 - No address hunting, contact harvesting, or operational use without human review.

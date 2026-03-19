@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import builtins
+import json
 import sqlite3
 import sys
 from argparse import Namespace
@@ -158,3 +159,77 @@ def test_reset_cache_rejects_non_sqlite_file(tmp_path, monkeypatch, capsys) -> N
     assert 'did not open cleanly as sqlite' in captured.out
     assert 'Refusing to delete automatically.' in captured.out
     assert cache_path.exists()
+
+
+def test_run_live_validation_live_requires_api_key(tmp_path, monkeypatch, capsys) -> None:
+    module = _load_script_module('scripts_run_live_validation_test_live', 'scripts/run_live_validation.py')
+    fake_repo_root = tmp_path
+    fake_script = fake_repo_root / 'scripts' / 'run_live_validation.py'
+    fake_script.parent.mkdir(parents=True)
+    fake_script.write_text('# test script placeholder\n', encoding='utf-8')
+
+    monkeypatch.setattr(module, '__file__', str(fake_script))
+    monkeypatch.setattr(
+        module,
+        'parse_args',
+        lambda: Namespace(mode='live', artifact_dir='live-validation-artifacts', run_id_prefix=None, include_comparison=False),
+    )
+    monkeypatch.delenv('EXA_API_KEY', raising=False)
+
+    exit_code = module.main()
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert 'Mode=live requested but EXA_API_KEY is missing.' in captured.err
+
+
+def test_run_live_validation_smoke_writes_summary(tmp_path, monkeypatch, capsys) -> None:
+    module = _load_script_module('scripts_run_live_validation_test_smoke', 'scripts/run_live_validation.py')
+    fake_repo_root = tmp_path
+    fake_script = fake_repo_root / 'scripts' / 'run_live_validation.py'
+    fake_script.parent.mkdir(parents=True)
+    fake_script.write_text('# test script placeholder\n', encoding='utf-8')
+    assets_dir = fake_repo_root / 'assets'
+    assets_dir.mkdir()
+    (assets_dir / 'live_validation_schema.json').write_text('{"type":"object"}\n', encoding='utf-8')
+
+    calls = []
+
+    class FakeCompletedProcess:
+        def __init__(self, stdout: str) -> None:
+            self.returncode = 0
+            self.stdout = stdout
+            self.stderr = ''
+
+    def fake_run(argv, cwd, capture_output, text, check, env):
+        calls.append({'argv': argv, 'cwd': cwd, 'env': env})
+        command_name = argv[3]
+        payload = {
+            'workflow': command_name,
+            'artifact_dir': str(fake_repo_root / 'live-validation-artifacts' / f'test-prefix-{command_name}'),
+            'request_id': f'req-{command_name}',
+        }
+        return FakeCompletedProcess(json.dumps(payload))
+
+    monkeypatch.setattr(module, '__file__', str(fake_script))
+    monkeypatch.setattr(
+        module,
+        'parse_args',
+        lambda: Namespace(mode='smoke', artifact_dir='live-validation-artifacts', run_id_prefix='test-prefix', include_comparison=True),
+    )
+    monkeypatch.setattr(module.subprocess, 'run', fake_run)
+    monkeypatch.delenv('EXA_API_KEY', raising=False)
+
+    exit_code = module.main()
+    captured = capsys.readouterr()
+    summary_path = fake_repo_root / 'live-validation-artifacts' / 'validation_summary.json'
+    summary_payload = json.loads(summary_path.read_text(encoding='utf-8'))
+
+    assert exit_code == 0
+    assert 'Mode=smoke: EXA_SMOKE_NO_NETWORK=1 (no network/API billing).' in captured.out
+    assert len(calls) == 6
+    assert calls[0]['cwd'] == fake_repo_root
+    assert summary_payload['mode'] == 'smoke'
+    assert summary_payload['run_id_prefix'] == 'test-prefix'
+    assert summary_payload['commands'][0]['name'] == 'search'
+    assert summary_payload['commands'][-1]['name'] == 'compare-search-types'
