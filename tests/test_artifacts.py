@@ -14,6 +14,7 @@ def test_experiment_artifact_writer_persists_run_files(tmp_path) -> None:
         config={'num_results': 5, 'search_type': 'auto'},
         pricing={'search_1_25': 0.005},
         run_context={'query_suite': 'insurance'},
+        runtime_metadata={'execution_mode': 'smoke', 'smoke_no_network': True},
         base_dir=tmp_path,
     )
 
@@ -67,6 +68,7 @@ def test_experiment_artifact_writer_persists_run_files(tmp_path) -> None:
     summary_payload = json.loads(summary_path.read_text(encoding='utf-8'))
 
     assert config_payload['run_id'] == 'demo-run'
+    assert config_payload['runtime']['execution_mode'] == 'smoke'
     assert len(query_lines) == 1
     assert len(result_lines) == 1
     assert json.loads(query_lines[0])['query_suite'] == 'insurance'
@@ -75,9 +77,11 @@ def test_experiment_artifact_writer_persists_run_files(tmp_path) -> None:
     assert summary_payload['headline_recommendation'] == 'Integrate'
     assert summary_payload['observed_confidence_score'] == 1.0
     assert summary_payload['extra']['run_context']['query_suite'] == 'insurance'
+    assert summary_payload['extra']['runtime']['execution_mode'] == 'smoke'
     assert summary_payload['extra']['taxonomy']['failure_rate'] == 0.0
     manifest_payload = json.loads((tmp_path / 'demo-run' / 'manifest.json').read_text(encoding='utf-8'))
     assert manifest_payload['run_id'] == 'demo-run'
+    assert manifest_payload['runtime']['execution_mode'] == 'smoke'
     assert {item['filename'] for item in manifest_payload['artifacts']} >= {
         'config.json',
         'queries.jsonl',

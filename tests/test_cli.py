@@ -64,10 +64,12 @@ def test_eval_command_smoke_writes_artifacts(tmp_path, capsys) -> None:
     assert 'taxonomy' in output
     summary_payload = json.loads((artifact_dir / 'cli-eval' / 'summary.json').read_text(encoding='utf-8'))
     assert summary_payload['extra']['run_context']['query_suite'] == 'all'
+    assert summary_payload['extra']['runtime']['execution_mode'] == 'smoke'
     assert (artifact_dir / 'cli-eval' / 'queries.jsonl').exists()
     assert (artifact_dir / 'cli-eval' / 'results.jsonl').exists()
     assert (artifact_dir / 'cli-eval' / 'results.csv').exists()
     manifest_payload = json.loads((artifact_dir / 'cli-eval' / 'manifest.json').read_text(encoding='utf-8'))
+    assert manifest_payload['runtime']['execution_mode'] == 'smoke'
     assert {item['filename'] for item in manifest_payload['artifacts']} >= {
         'config.json',
         'queries.jsonl',
@@ -500,6 +502,8 @@ def test_research_command_smoke_emits_json_and_artifact(tmp_path, capsys) -> Non
     assert research_payload['citation_count'] == 3
     assert research_payload['citations'][0]['title'] == 'Mock Research Source 1'
     assert '# Research Report' in (artifact_dir / 'research-run' / 'research.md').read_text(encoding='utf-8')
+    summary_payload = json.loads((artifact_dir / 'research-run' / 'summary.json').read_text(encoding='utf-8'))
+    assert summary_payload['extra']['runtime']['execution_mode'] == 'smoke'
 
 
 def test_research_command_live_requires_api_key(tmp_path, monkeypatch) -> None:

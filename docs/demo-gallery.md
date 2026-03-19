@@ -2,6 +2,8 @@
 
 This page is the docs entrypoint for the shipped workflows. It stays command-first and artifact-first so the repo remains easy to navigate without changing the core harness.
 
+Default to `--mode smoke` while developing or validating commands locally. Treat `--mode live` as a deliberate manual validation path that can incur billing and still requires human review.
+
 ## Discovery
 
 `search` is the default ranked-discovery workflow for CAT-loss and insurance people search. Use it when you want a relevance-ranked result set and the standard `results.jsonl` plus `summary.json` artifact bundle.

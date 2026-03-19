@@ -18,11 +18,13 @@ class ExperimentArtifactWriter:
         config: Mapping[str, Any],
         pricing: Mapping[str, Any],
         run_context: Optional[Mapping[str, Any]] = None,
+        runtime_metadata: Optional[Mapping[str, Any]] = None,
         base_dir: str | Path = 'experiments',
     ) -> None:
         self.run_id = str(run_id)
         self.base_dir = Path(base_dir)
         self.run_context = _to_jsonable_mapping(run_context or {})
+        self.runtime_metadata = _to_jsonable_mapping(runtime_metadata or {})
         self.artifact_dir = self.base_dir / self.run_id
         self.config_path = self.artifact_dir / 'config.json'
         self.queries_path = self.artifact_dir / 'queries.jsonl'
@@ -44,6 +46,7 @@ class ExperimentArtifactWriter:
                 'generated_at_utc': _utc_now(),
                 'config': _to_jsonable_mapping(config),
                 'pricing': _to_jsonable_mapping(pricing),
+                'runtime': self.runtime_metadata,
             },
         )
         self._record_artifact(self.config_path, kind='config')
@@ -87,6 +90,8 @@ class ExperimentArtifactWriter:
         extra_payload: Dict[str, Any] = {}
         if self.run_context:
             extra_payload["run_context"] = self.run_context
+        if self.runtime_metadata:
+            extra_payload["runtime"] = self.runtime_metadata
         if extra:
             extra_payload.update(_to_jsonable_mapping(extra))
 
@@ -169,6 +174,8 @@ class ExperimentArtifactWriter:
             {
                 'run_id': self.run_id,
                 'artifact_dir': str(self.artifact_dir),
+                'run_context': self.run_context,
+                'runtime': self.runtime_metadata,
                 'artifacts': sorted(self._artifact_records, key=lambda item: item['filename']),
             },
         )

@@ -177,6 +177,7 @@ def run_search_command(args: argparse.Namespace) -> int:
         config=config,
         pricing=pricing,
         run_context={},
+        runtime_metadata=_runtime_metadata(runtime),
         base_dir=args.artifact_dir,
     )
     writer.record_query(record)
@@ -256,6 +257,7 @@ def run_answer_command(args: argparse.Namespace) -> int:
         config=config,
         pricing=pricing,
         run_context={"workflow": "answer"},
+        runtime_metadata=_runtime_metadata(runtime),
         base_dir=args.artifact_dir,
     )
     writer.write_json_artifact("answer.json", answer_payload)
@@ -340,6 +342,7 @@ def run_research_command(args: argparse.Namespace) -> int:
         config=config,
         pricing=pricing,
         run_context={"workflow": "research"},
+        runtime_metadata=_runtime_metadata(runtime),
         base_dir=args.artifact_dir,
     )
     writer.write_json_artifact("research.json", research_payload)
@@ -446,6 +449,7 @@ def run_find_similar_command(args: argparse.Namespace) -> int:
         config=config,
         pricing=pricing,
         run_context={"workflow": "find-similar"},
+        runtime_metadata=_runtime_metadata(runtime),
         base_dir=args.artifact_dir,
     )
     writer.write_json_artifact("find_similar.json", find_similar_payload)
@@ -545,6 +549,7 @@ def run_structured_search_command(args: argparse.Namespace) -> int:
         config=config,
         pricing=pricing,
         run_context={"workflow": "structured-search"},
+        runtime_metadata=_runtime_metadata(runtime),
         base_dir=args.artifact_dir,
     )
     writer.write_json_artifact("structured_output.json", structured_payload)
@@ -678,6 +683,7 @@ def _run_eval_workflow(
         config=config,
         pricing=pricing,
         run_context={"query_suite": _normalized_query_suite(args.suite)},
+        runtime_metadata=_runtime_metadata(runtime),
         base_dir=args.artifact_dir,
     )
     queries = _load_queries(args)
@@ -803,6 +809,16 @@ def _resolve_runtime(mode: str, run_id: Optional[str]) -> RuntimeState:
     if run_id:
         env["EXA_RUN_ID"] = run_id
     return load_runtime_state(env=env)
+
+
+def _runtime_metadata(runtime: RuntimeState) -> Dict[str, Any]:
+    execution_mode = "smoke" if runtime.smoke_no_network else "live"
+    return {
+        "execution_mode": execution_mode,
+        "smoke_no_network": bool(runtime.smoke_no_network),
+        "network_access": not bool(runtime.smoke_no_network),
+        "api_key_configured": bool(runtime.exa_api_key),
+    }
 
 
 def _make_search_people(

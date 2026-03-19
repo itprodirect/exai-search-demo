@@ -3,4 +3,4 @@ repos:
     rev: v0.9.10
     hooks:
       - id: ruff
-        files: ^(src/exa_demo|scripts)/
+        files: ^(src/exa_demo|scripts|tests)/

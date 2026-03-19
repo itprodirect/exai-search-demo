@@ -16,6 +16,7 @@ This repo is intentionally in **minimal mode**:
 - [CLI commands](#cli-commands)
 - [Experiment artifacts](#experiment-artifacts)
 - [Demo gallery](#demo-gallery)
+- [Integration boundaries](#integration-boundaries)
 - [Roadmap and delivery history](#roadmap-and-delivery-history)
 - [Guardrails](#guardrails)
 
@@ -221,6 +222,7 @@ Workflow-specific commands may also add:
 - `manifest.json`
 
 Smoke-mode runs keep the same artifact shape, but with mocked results and zero spend.
+Every run also records runtime execution metadata in `config.json`, `summary.json`, and `manifest.json` so downstream review can distinguish smoke artifacts from live runs.
 
 ## Demo Gallery
 
@@ -234,6 +236,10 @@ Use [docs/demo-gallery.md](docs/demo-gallery.md) as the top-level walkthrough fo
 - `compare-search-types` for quality/cost tradeoff analysis
 
 The gallery is deliberately command-first. It points at the exact entrypoint and artifact for each workflow without changing the project core.
+
+## Integration Boundaries
+
+Use [docs/integration-boundaries.md](docs/integration-boundaries.md) for the current smoke-vs-live execution contract, artifact expectations, and delivery rules.
 
 ## Cache + Budget Behavior
 
@@ -270,6 +276,10 @@ Modes:
 - `--mode smoke`: forced no-network run (default)
 - `--mode live`: real API calls (requires `EXA_API_KEY`)
 - `--mode auto`: live if key exists, otherwise smoke
+
+Recommended boundary:
+- default to `--mode smoke` for development, CI, and docs validation
+- use `--mode live` only for deliberate manual validation with a real key and human review
 
 Optional timeout override:
 
@@ -322,7 +332,7 @@ For a from-scratch architecture critique and refactor roadmap, see `docs/rebuild
 - GitHub issue tracker mapping: [docs/issue-tracker.md](docs/issue-tracker.md)
 - ADR index: [docs/adr/README.md](docs/adr/README.md)
 - Session note template: [docs/sessions/README.md](docs/sessions/README.md)
-- Latest implementation session: [docs/sessions/2026-03-18-phase2-parallel-slices.md](docs/sessions/2026-03-18-phase2-parallel-slices.md)
+- Latest implementation session: [docs/sessions/2026-03-19-phase3-export-outputs-and-smoke-rails.md](docs/sessions/2026-03-19-phase3-export-outputs-and-smoke-rails.md)
 
 ## Guardrails
 

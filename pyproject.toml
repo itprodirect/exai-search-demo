@@ -41,8 +41,6 @@ exclude = [
   "docs",
   "experiments",
   "exa_people_search_eval.ipynb",
-  "src/exa_demo/evaluation.py",
-  "tests",
 ]
 
 [tool.ruff.lint]
