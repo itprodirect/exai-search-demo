@@ -28,10 +28,12 @@ class ExperimentArtifactWriter:
         self.queries_path = self.artifact_dir / 'queries.jsonl'
         self.results_path = self.artifact_dir / 'results.jsonl'
         self.summary_path = self.artifact_dir / 'summary.json'
+        self.manifest_path = self.artifact_dir / 'manifest.json'
         self._record_count = 0
+        self._artifact_records: list[dict[str, str]] = []
 
         self.artifact_dir.mkdir(parents=True, exist_ok=True)
-        for path in (self.queries_path, self.results_path, self.summary_path):
+        for path in (self.queries_path, self.results_path, self.summary_path, self.manifest_path):
             if path.exists():
                 path.unlink()
 
@@ -44,6 +46,7 @@ class ExperimentArtifactWriter:
                 'pricing': _to_jsonable_mapping(pricing),
             },
         )
+        self._record_artifact(self.config_path, kind='config')
 
     def record_query(self, record: QueryEvaluationRecord) -> None:
         self._append_jsonl(
@@ -64,6 +67,8 @@ class ExperimentArtifactWriter:
             result_payload = {**self.run_context, **result_payload}
         self._append_jsonl(self.results_path, result_payload)
         self._record_count += 1
+        self._record_artifact(self.queries_path, kind='query-jsonl')
+        self._record_artifact(self.results_path, kind='result-jsonl')
 
     def write_summary(
         self,
@@ -117,11 +122,25 @@ class ExperimentArtifactWriter:
             payload['extra'] = extra_payload
 
         self._write_json(self.summary_path, payload)
+        self._record_artifact(self.summary_path, kind='summary')
         return self.summary_path
 
     def write_json_artifact(self, filename: str, payload: Mapping[str, Any]) -> Path:
         path = self.artifact_dir / str(filename)
         self._write_json(path, payload)
+        self._record_artifact(path, kind='json')
+        return path
+
+    def write_text_artifact(self, filename: str, content: str, *, kind: str = 'text') -> Path:
+        path = self.artifact_dir / str(filename)
+        path.write_text(str(content), encoding='utf-8', newline='\n')
+        self._record_artifact(path, kind=kind)
+        return path
+
+    def write_dataframe_csv(self, filename: str, dataframe: pd.DataFrame, *, kind: str = 'csv') -> Path:
+        path = self.artifact_dir / str(filename)
+        dataframe.to_csv(path, index=False)
+        self._record_artifact(path, kind=kind)
         return path
 
     def _append_jsonl(self, path: Path, payload: Mapping[str, Any]) -> None:
@@ -133,6 +152,26 @@ class ExperimentArtifactWriter:
         with path.open('w', encoding='utf-8', newline='\n') as handle:
             json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
             handle.write('\n')
+
+    def _record_artifact(self, path: Path, *, kind: str) -> None:
+        record = {
+            'filename': path.name,
+            'kind': str(kind),
+            'path': str(path),
+        }
+        existing_index = next((index for index, item in enumerate(self._artifact_records) if item['filename'] == path.name), None)
+        if existing_index is None:
+            self._artifact_records.append(record)
+        else:
+            self._artifact_records[existing_index] = record
+        self._write_json(
+            self.manifest_path,
+            {
+                'run_id': self.run_id,
+                'artifact_dir': str(self.artifact_dir),
+                'artifacts': sorted(self._artifact_records, key=lambda item: item['filename']),
+            },
+        )
 
 
 def _utc_now() -> str:

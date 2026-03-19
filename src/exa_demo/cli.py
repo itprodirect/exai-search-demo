@@ -21,6 +21,7 @@ from .reporting import (
     build_before_after_report,
     build_cost_projections,
     build_qualitative_notes,
+    render_research_markdown,
     recommendation,
     summarize_failure_taxonomy,
     write_comparison_markdown,
@@ -342,6 +343,15 @@ def run_research_command(args: argparse.Namespace) -> int:
         base_dir=args.artifact_dir,
     )
     writer.write_json_artifact("research.json", research_payload)
+    writer.write_text_artifact(
+        "research.md",
+        render_research_markdown(
+            query=args.query,
+            report_text=record.report_text or "",
+            citations=[citation.to_dict() for citation in record.citations],
+        ),
+        kind="markdown",
+    )
     writer.write_summary(
         summary,
         projections={
@@ -685,6 +695,7 @@ def _run_eval_workflow(
         ),
         record_query=writer.record_query,
     )
+    writer.write_dataframe_csv("results.csv", batch_df, kind="results-csv")
     taxonomy = summarize_failure_taxonomy(batch_df)
     summary = cache_store.spend_so_far(run_id=runtime.run_id)
     qualitative_notes = build_qualitative_notes(batch_df, config, smoke_no_network=runtime.smoke_no_network)
@@ -713,6 +724,14 @@ def _run_eval_workflow(
             after_context={"query_suite": _normalized_query_suite(args.suite)},
         )
         comparison_markdown_path = write_comparison_markdown(writer.artifact_dir, comparison_report)
+        writer.write_json_artifact("comparison.json", comparison_report)
+        grouped_query_outcomes = comparison_report.get("grouped_query_outcomes")
+        if isinstance(grouped_query_outcomes, list):
+            writer.write_dataframe_csv(
+                "grouped_query_outcomes.csv",
+                pd.DataFrame(grouped_query_outcomes),
+                kind="comparison-csv",
+            )
 
     summary_extra: Dict[str, Any] = {"taxonomy": taxonomy}
     if comparison_report is not None:

@@ -8,7 +8,6 @@ from argparse import Namespace
 from pathlib import Path
 
 import nbformat
-import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -85,6 +84,7 @@ def test_run_notebook_smoke_auto_falls_back_to_smoke(tmp_path, monkeypatch, caps
     assert 'Mode=smoke: EXA_SMOKE_NO_NETWORK=1 (no network/API billing).' in captured.out
     assert 'Notebook execution completed successfully.' in captured.out
     assert module.os.environ['EXA_SMOKE_NO_NETWORK'] == '1'
+    assert module.os.environ['JUPYTER_PLATFORM_DIRS'] == '1'
     assert executed['called'] is True
     assert executed['timeout'] == 17
     assert executed['kernel_name'] == 'python3'

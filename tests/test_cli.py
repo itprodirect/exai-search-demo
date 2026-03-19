@@ -66,6 +66,15 @@ def test_eval_command_smoke_writes_artifacts(tmp_path, capsys) -> None:
     assert summary_payload['extra']['run_context']['query_suite'] == 'all'
     assert (artifact_dir / 'cli-eval' / 'queries.jsonl').exists()
     assert (artifact_dir / 'cli-eval' / 'results.jsonl').exists()
+    assert (artifact_dir / 'cli-eval' / 'results.csv').exists()
+    manifest_payload = json.loads((artifact_dir / 'cli-eval' / 'manifest.json').read_text(encoding='utf-8'))
+    assert {item['filename'] for item in manifest_payload['artifacts']} >= {
+        'config.json',
+        'queries.jsonl',
+        'results.jsonl',
+        'results.csv',
+        'summary.json',
+    }
 
 
 def test_eval_command_can_emit_before_after_comparison(tmp_path, capsys) -> None:
@@ -153,6 +162,8 @@ def test_eval_command_can_emit_before_after_comparison(tmp_path, capsys) -> None
     assert output['comparison']['grouped_query_outcomes'][0]['baseline_resolved_search_type'] == 'auto'
     assert output['comparison']['grouped_query_outcomes'][0]['candidate_resolved_search_type'] == 'auto'
     assert (artifact_dir / 'cli-eval-compare' / 'comparison.md').exists()
+    assert (artifact_dir / 'cli-eval-compare' / 'comparison.json').exists()
+    assert (artifact_dir / 'cli-eval-compare' / 'grouped_query_outcomes.csv').exists()
     assert output['comparison_markdown_path'].endswith('comparison.md')
 
 
@@ -483,10 +494,12 @@ def test_research_command_smoke_emits_json_and_artifact(tmp_path, capsys) -> Non
     assert output['citation_count'] == 3
     assert 'Mock research report' in output['report']
     assert (artifact_dir / 'research-run' / 'research.json').exists()
+    assert (artifact_dir / 'research-run' / 'research.md').exists()
     assert (artifact_dir / 'research-run' / 'summary.json').exists()
     research_payload = json.loads((artifact_dir / 'research-run' / 'research.json').read_text(encoding='utf-8'))
     assert research_payload['citation_count'] == 3
     assert research_payload['citations'][0]['title'] == 'Mock Research Source 1'
+    assert '# Research Report' in (artifact_dir / 'research-run' / 'research.md').read_text(encoding='utf-8')
 
 
 def test_research_command_live_requires_api_key(tmp_path, monkeypatch) -> None:

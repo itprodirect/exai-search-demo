@@ -63,6 +63,7 @@ def main() -> int:
     ipython_dir = Path(tempfile.mkdtemp(prefix="ipython-"))
     os.environ["JUPYTER_RUNTIME_DIR"] = str(runtime_dir)
     os.environ["IPYTHONDIR"] = str(ipython_dir)
+    os.environ.setdefault("JUPYTER_PLATFORM_DIRS", "1")
     os.environ.setdefault("JUPYTER_ALLOW_INSECURE_WRITES", "true")
 
     # Sandbox/CI workaround: Windows ACL restriction calls can fail even on writable temp paths.

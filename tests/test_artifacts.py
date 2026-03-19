@@ -2,6 +2,8 @@
 
 import json
 
+import pandas as pd
+
 from exa_demo.artifacts import ExperimentArtifactWriter
 from exa_demo.models import CostBreakdown, ExaResult, QueryEvaluationRecord
 
@@ -74,6 +76,14 @@ def test_experiment_artifact_writer_persists_run_files(tmp_path) -> None:
     assert summary_payload['observed_confidence_score'] == 1.0
     assert summary_payload['extra']['run_context']['query_suite'] == 'insurance'
     assert summary_payload['extra']['taxonomy']['failure_rate'] == 0.0
+    manifest_payload = json.loads((tmp_path / 'demo-run' / 'manifest.json').read_text(encoding='utf-8'))
+    assert manifest_payload['run_id'] == 'demo-run'
+    assert {item['filename'] for item in manifest_payload['artifacts']} >= {
+        'config.json',
+        'queries.jsonl',
+        'results.jsonl',
+        'summary.json',
+    }
 
 
 def test_experiment_artifact_writer_writes_json_artifact(tmp_path) -> None:
@@ -134,6 +144,27 @@ def test_experiment_artifact_writer_writes_research_artifact(tmp_path) -> None:
     assert path.name == 'research.json'
     assert payload['query'] == 'Summarize the Florida CAT market outlook.'
     assert payload['citations'][0]['title'] == 'Florida market bulletin'
+
+
+def test_experiment_artifact_writer_writes_text_and_csv_artifacts(tmp_path) -> None:
+    writer = ExperimentArtifactWriter(
+        run_id='exports-run',
+        config={'mode': 'smoke'},
+        pricing={'search_1_25': 0.005},
+        base_dir=tmp_path,
+    )
+
+    markdown_path = writer.write_text_artifact('research.md', '# Research Report\n', kind='markdown')
+    csv_path = writer.write_dataframe_csv(
+        'results.csv',
+        pd.DataFrame([{'query': 'one', 'confidence_score': 0.9}]),
+        kind='results-csv',
+    )
+
+    manifest_payload = json.loads((tmp_path / 'exports-run' / 'manifest.json').read_text(encoding='utf-8'))
+    assert markdown_path.name == 'research.md'
+    assert csv_path.name == 'results.csv'
+    assert {item['filename'] for item in manifest_payload['artifacts']} >= {'config.json', 'research.md', 'results.csv'}
 
 
 def test_experiment_artifact_writer_writes_structured_output_artifact(tmp_path) -> None:

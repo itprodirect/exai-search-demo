@@ -50,12 +50,12 @@ python -m exa_demo compare-search-types --mode smoke --suite forensic_and_damage
 
 | Workflow | Primary artifact |
 | --- | --- |
-| `search` | `results.jsonl`, `summary.json` |
+| `search` | `results.jsonl`, `summary.json`, `manifest.json` |
 | `answer` | `answer.json`, `summary.json` |
-| `research` | `research.json`, `summary.json` |
+| `research` | `research.json`, `research.md`, `summary.json` |
 | `structured-search` | `structured_output.json`, `summary.json` |
 | `find-similar` | `find_similar.json`, `summary.json` |
-| `compare-search-types` | `comparison.md` plus paired run artifacts |
+| `compare-search-types` | `comparison.md`, `comparison.json`, `grouped_query_outcomes.csv` plus paired run artifacts |
 
 ## Recommended Order
 

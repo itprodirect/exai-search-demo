@@ -6,6 +6,7 @@ import pandas as pd
 
 from exa_demo.reporting import (
     build_before_after_report,
+    render_research_markdown,
     render_comparison_markdown,
     summarize_failure_taxonomy,
     write_comparison_markdown,
@@ -194,4 +195,23 @@ def test_render_and_write_comparison_markdown(tmp_path) -> None:
     assert written.name == 'comparison.md'
     assert written.exists()
     assert '## Query Outcomes' in written.read_text(encoding='utf-8')
+
+
+def test_render_research_markdown_includes_report_and_citations() -> None:
+    markdown = render_research_markdown(
+        query='Summarize the Florida CAT market outlook.',
+        report_text='Mock research report body.',
+        citations=[
+            {
+                'title': 'Florida market bulletin',
+                'url': 'https://example.com/bulletin',
+                'snippet': 'Bulletin summary',
+            }
+        ],
+    )
+
+    assert '# Research Report' in markdown
+    assert 'Summarize the Florida CAT market outlook.' in markdown
+    assert 'Mock research report body.' in markdown
+    assert '[Florida market bulletin](https://example.com/bulletin)' in markdown
 

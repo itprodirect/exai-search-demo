@@ -398,6 +398,38 @@ def write_comparison_markdown(
     return path
 
 
+def render_research_markdown(
+    *,
+    query: str,
+    report_text: str,
+    citations: List[Mapping[str, Any]] | None = None,
+) -> str:
+    lines: List[str] = []
+    lines.append("# Research Report")
+    lines.append("")
+    lines.append(f"- Query: `{query}`")
+    lines.append("")
+    lines.append("## Report")
+    lines.append("")
+    lines.append(report_text.strip() or "No report text returned.")
+    citations = citations or []
+    if citations:
+        lines.append("")
+        lines.append("## Citations")
+        lines.append("")
+        for citation in citations:
+            title = str(citation.get("title") or "Untitled source").strip()
+            url = str(citation.get("url") or "").strip()
+            snippet = str(citation.get("snippet") or "").strip()
+            if url:
+                lines.append(f"- [{title}]({url})")
+            else:
+                lines.append(f"- {title}")
+            if snippet:
+                lines.append(f"  - {snippet}")
+    return "\n".join(lines).strip() + "\n"
+
+
 def _load_run_summary_payload(run_dir: Path) -> Dict[str, Any]:
     summary_path = run_dir / "summary.json"
     if not summary_path.exists():
