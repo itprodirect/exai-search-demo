@@ -24,6 +24,10 @@ jobs:
           pip install -e ".[dev]"
           pip install ipykernel
 
+      - name: Run ruff
+        run: |
+          python -m ruff check .
+
       - name: Run pytest
         run: |
           python -m pytest -q
