@@ -7,6 +7,7 @@ from exa_demo.models import (
     ExaResult,
     FindSimilarRecord,
     QueryEvaluationRecord,
+    ResearchRecord,
     StructuredOutputField,
     StructuredOutputRecord,
 )
@@ -150,6 +151,40 @@ def test_answer_record_builds_flat_row() -> None:
     assert flat['top_citation_url'] == 'https://example.com/statute'
     assert record.answer.startswith('Mock answer for query:')
     assert record.citations[0].title == 'Florida Appraisal Statute'
+
+
+def test_research_record_builds_flat_row() -> None:
+    class ResearchMeta:
+        cache_hit = False
+        request_hash = 'hash-research'
+        request_payload = {'query': 'Summarize the Florida CAT market outlook.'}
+        request_id = 'research-abc'
+        created_at_utc = '2026-03-19T00:00:00+00:00'
+        estimated_cost_usd = 0.005
+        actual_cost_usd = 0.0
+
+    record = ResearchRecord.from_runtime(
+        'Summarize the Florida CAT market outlook.',
+        {
+            'report': 'Mock research report for query: Summarize the Florida CAT market outlook.',
+            'sources': [
+                {
+                    'name': 'Florida Market Bulletin',
+                    'sourceUrl': 'https://example.com/bulletin',
+                    'text': 'Market bulletin summary',
+                }
+            ],
+        },
+        ResearchMeta(),
+    )
+
+    flat = record.to_flat_dict()
+    assert flat['query'] == 'Summarize the Florida CAT market outlook.'
+    assert flat['request_id'] == 'research-abc'
+    assert flat['citation_count'] == 1
+    assert flat['top_citation_url'] == 'https://example.com/bulletin'
+    assert record.report_text.startswith('Mock research report for query:')
+    assert record.citations[0].title == 'Florida Market Bulletin'
 
 
 def test_find_similar_record_builds_flat_row() -> None:

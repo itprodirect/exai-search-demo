@@ -1,6 +1,6 @@
 ﻿# exai-search-demo
 
-Minimal, reproducible **Exa People Search evaluation harness** for insurance / CAT-loss workflows.
+Minimal, reproducible **Exa search and research demo harness** for insurance / CAT-loss workflows.
 
 This repo is intentionally in **minimal mode**:
 - one core notebook: `exa_people_search_eval.ipynb`
@@ -26,6 +26,7 @@ This repo is intentionally in **minimal mode**:
 | Benchmark evaluation | Done | `python -m exa_demo eval` | `queries.jsonl`, `results.jsonl`, `summary.json` | Includes taxonomy scoring and grouped comparison context |
 | Search-type comparison | Done | `python -m exa_demo compare-search-types` | `comparison.md` plus paired run artifacts | Compares `deep` vs `deep-reasoning` end to end |
 | Cited answers | Done | `python -m exa_demo answer` | `answer.json` | Separate workflow from ranked-search evaluation |
+| Research reports | Done | `python -m exa_demo research` | `research.json` | Separate report-style workflow with citations |
 | Structured extraction | Done | `python -m exa_demo structured-search` | `structured_output.json` | Uses `outputSchema` for schema-driven extraction |
 | Seed-URL discovery | Done | `python -m exa_demo find-similar` | `find_similar.json` | Separate `/findSimilar` workflow and normalization path |
 | Cache and budget ledger | Done | Notebook + CLI | `exa_cache.sqlite`, `summary.json` | Prevents re-billing on cache hits |
@@ -39,7 +40,7 @@ flowchart TD
     CLI --> CFG["Config + runtime state"]
     CLI --> CACHE["SQLite cache + budget ledger"]
     CLI --> CLIENT["Exa client adapters"]
-    CLIENT --> EXA["Exa endpoints\n/search, /answer, /findSimilar"]
+    CLIENT --> EXA["Exa endpoints\n/search, /answer, /research, /findSimilar"]
     CLIENT --> MOCK["Smoke-mode mocked responses"]
     CLIENT --> MODELS["Typed models + normalization"]
     MODELS --> EVAL["Evaluation + taxonomy + grouped comparison"]
@@ -114,6 +115,12 @@ If your environment blocks build-dependency downloads, use:
 ```powershell
 pip install -e ".[dev]" --no-build-isolation
 ```
+
+Optional local hooks:
+
+```powershell
+pre-commit install
+```
 ## Configure Environment
 
 Create `.env` from template:
@@ -156,6 +163,7 @@ Notebook flow is intentionally fixed to 9 cells:
 ```powershell
 python -m exa_demo search "forensic engineer insurance expert witness" --mode smoke --json
 python -m exa_demo answer "What is the Florida appraisal clause dispute process?" --mode smoke --json
+python -m exa_demo research "Summarize the Florida CAT market outlook." --mode smoke --json
 python -m exa_demo structured-search "independent adjuster florida catastrophe claims" --schema-file .\path\to\structured-schema.json --mode smoke --json
 python -m exa_demo find-similar "https://example.com/florida-appraisal-decision" --mode smoke --json
 python -m exa_demo search "Florida property insurance appraisal clause" --type deep --additional-query "Florida appraisal dispute statute" --start-published-date 2025-01-01 --livecrawl --json
@@ -167,6 +175,7 @@ python -m exa_demo budget --run-id demo-2026-03 --json
 
 The search and eval commands write the same experiments/<RUN_ID>/ artifact bundle as the notebook flow.
 The `answer` command writes the same run directory and adds an `answer.json` artifact containing the cited-answer payload.
+The `research` command writes the same run directory and adds a `research.json` artifact containing the research-report payload.
 The `structured-search` command runs a schema-driven deep search and writes a `structured_output.json` artifact containing the extracted structured payload.
 The `find-similar` command runs a seed-URL discovery workflow and writes a `find_similar.json` artifact containing the similar-result payload.
 Deep-search-oriented request shaping is now exposed directly in the CLI with additive flags such as `--additional-query`, `--start-published-date`, `--end-published-date`, and `--livecrawl`.
@@ -183,8 +192,8 @@ When comparison is enabled, the run also writes a human-readable `experiments/<R
 ## Benchmark Fixture
 
 The packaged regression-style query fixture lives at `benchmarks/insurance_cat_queries.json`.
-The fixture now supports named suites while preserving the aggregate default set.
-Use `--suite all` for the full benchmark or pick a named segment such as `forensic_and_damage_engineering`, `coverage_and_litigation`, or `adjusters_appraisers_and_restoration`.
+The fixture now supports named suites while preserving the aggregate default set, and suites can be authored as plain query arrays or richer objects with suite metadata plus mixed string/object query entries.
+Use `--suite all` for the full benchmark or pick a named segment such as `forensic_and_damage_engineering`, `restoration_and_mitigation`, `carrier_tpa_and_vendor_ecosystem`, or `regulatory_legislative_and_market_news`.
 The notebook still owns execution and presentation, but Cell 6 now loads this fixture so the query set is reusable in tests and future CLI flows.
 
 
@@ -200,6 +209,7 @@ Each notebook run now writes a versioned artifact bundle under `experiments/<RUN
 Workflow-specific commands may also add:
 
 - `answer.json`
+- `research.json`
 - `find_similar.json`
 - `structured_output.json`
 
@@ -229,6 +239,12 @@ python .\scripts\reset_cache.py --yes
 ```powershell
 python .\scripts\run_notebook_smoke.py --mode smoke
 ```
+
+## Local Quality Gate
+
+- `python -m ruff check .`
+- `python -m pytest -q`
+- `pre-commit run --all-files`
 
 Modes:
 - `--mode smoke`: forced no-network run (default)

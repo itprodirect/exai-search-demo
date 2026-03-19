@@ -106,6 +106,36 @@ def test_experiment_artifact_writer_writes_json_artifact(tmp_path) -> None:
     assert payload['citations'][0]['title'] == 'Florida appraisal clause overview'
 
 
+def test_experiment_artifact_writer_writes_research_artifact(tmp_path) -> None:
+    writer = ExperimentArtifactWriter(
+        run_id='research-run',
+        config={'mode': 'smoke'},
+        pricing={'search_1_25': 0.005},
+        run_context={'workflow': 'research'},
+        base_dir=tmp_path,
+    )
+
+    path = writer.write_json_artifact(
+        'research.json',
+        {
+            'query': 'Summarize the Florida CAT market outlook.',
+            'report_text': 'Mock research report.',
+            'citations': [
+                {
+                    'title': 'Florida market bulletin',
+                    'url': 'https://example.com/bulletin',
+                    'snippet': 'Mock research citation.',
+                }
+            ],
+        },
+    )
+
+    payload = json.loads(path.read_text(encoding='utf-8'))
+    assert path.name == 'research.json'
+    assert payload['query'] == 'Summarize the Florida CAT market outlook.'
+    assert payload['citations'][0]['title'] == 'Florida market bulletin'
+
+
 def test_experiment_artifact_writer_writes_structured_output_artifact(tmp_path) -> None:
     writer = ExperimentArtifactWriter(
         run_id='structured-run',

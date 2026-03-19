@@ -80,6 +80,10 @@ def build_answer_payload(query: str) -> Dict[str, Any]:
     return {"query": query, "text": True}
 
 
+def build_research_payload(query: str) -> Dict[str, Any]:
+    return {"query": query}
+
+
 def build_structured_search_payload(
     query: str,
     config: Mapping[str, Any],
@@ -277,6 +281,37 @@ def mock_exa_answer_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
 
+def mock_exa_research_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
+    query = str(payload.get("query") or "")
+    slug = sha256_hex(query)[:8]
+    citations = [
+        {
+            "title": f"Mock Research Source {index + 1}",
+            "url": f"https://example.com/mock-research/{slug}/{index + 1}",
+            "snippet": (
+                f"Mock research source snippet {index + 1} for query: {query}. "
+                "Public/professional info only."
+            ),
+            "publishedDate": "2026-03-19",
+            "author": "Mock Analyst",
+        }
+        for index in range(3)
+    ]
+    return {
+        "requestId": f"smoke-{slug}",
+        "report": (
+            f"Mock research report for query: {query}.\n\n"
+            "Key takeaways:\n"
+            "- Market conditions remain dynamic.\n"
+            "- Regulatory and litigation monitoring should continue.\n"
+            "- Human review is required before operational use."
+        ),
+        "citations": citations,
+        "costDollars": {"search": 0.0, "contents": 0.0, "total": 0.0},
+        "_smokeMode": True,
+    }
+
+
 def exa_http_call(
     payload: Dict[str, Any],
     *,
@@ -293,6 +328,8 @@ def exa_http_call(
             return mock_exa_structured_search_response(payload)
         if endpoint_name == "answer":
             return mock_exa_answer_response(payload)
+        if endpoint_name == "research":
+            return mock_exa_research_response(payload)
         return mock_exa_response(payload)
 
     if not exa_api_key:
@@ -516,8 +553,55 @@ def exa_answer(
     return response_json, meta
 
 
+def exa_research(
+    query: str,
+    *,
+    config: Mapping[str, Any],
+    pricing: Mapping[str, float],
+    exa_api_key: str,
+    smoke_no_network: bool,
+    run_id: str,
+    cache_store: SqliteCacheStore,
+) -> Tuple[Dict[str, Any], ExaCallMeta]:
+    payload = build_research_payload(query)
+    estimated_cost = _estimate_research_cost_from_pricing(pricing)
+
+    response_json, cache_hit = cache_store.get_or_set(
+        payload,
+        estimated_cost,
+        run_id=run_id,
+        budget_cap_usd=float(config["budget_cap_usd"]),
+        fetcher=lambda request_payload: exa_http_call(
+            request_payload,
+            config=config,
+            exa_api_key=exa_api_key,
+            smoke_no_network=smoke_no_network,
+            endpoint_name="research",
+        ),
+    )
+
+    meta = ExaCallMeta(
+        cache_hit=cache_hit,
+        request_hash=request_hash_for_payload(payload),
+        request_payload=payload,
+        estimated_cost_usd=estimated_cost,
+        actual_cost_usd=parse_actual_cost(response_json),
+        request_id=response_json.get("requestId") if isinstance(response_json, dict) else None,
+        resolved_search_type=None,
+        created_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    return response_json, meta
+
+
 def _estimate_answer_cost_from_pricing(pricing: Mapping[str, float]) -> float:
     for key in ("answer", "answer_1", "answer_1_25"):
+        if key in pricing:
+            return float(pricing[key])
+    return float(pricing.get("search_1_25", 0.0))
+
+
+def _estimate_research_cost_from_pricing(pricing: Mapping[str, float]) -> float:
+    for key in ("research", "research_1", "research_1_25"):
         if key in pricing:
             return float(pricing[key])
     return float(pricing.get("search_1_25", 0.0))

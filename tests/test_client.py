@@ -4,13 +4,16 @@ from exa_demo.client import (
     build_answer_payload,
     build_exa_payload,
     build_find_similar_payload,
+    build_research_payload,
     build_structured_search_payload,
     exa_answer,
     exa_find_similar,
+    exa_research,
     exa_structured_search,
     mock_exa_answer_response,
     mock_exa_find_similar_response,
     mock_exa_response,
+    mock_exa_research_response,
     mock_exa_structured_search_response,
 )
 from exa_demo.config import default_config
@@ -238,6 +241,23 @@ def test_mock_exa_answer_response_returns_citations() -> None:
     assert response["citations"][0]["url"].startswith("https://example.com/mock-answer/")
 
 
+def test_build_research_payload_is_query_only() -> None:
+    payload = build_research_payload("Summarize the Florida CAT market outlook.")
+
+    assert payload == {"query": "Summarize the Florida CAT market outlook."}
+
+
+def test_mock_exa_research_response_returns_report_and_citations() -> None:
+    payload = build_research_payload("Summarize the Florida CAT market outlook.")
+
+    response = mock_exa_research_response(payload)
+
+    assert response["report"].startswith("Mock research report for query:")
+    assert isinstance(response["citations"], list)
+    assert len(response["citations"]) == 3
+    assert response["citations"][0]["url"].startswith("https://example.com/mock-research/")
+
+
 def test_exa_answer_uses_smoke_cited_answer_shape() -> None:
     cache_store = FakeCacheStore()
     config = default_config()
@@ -259,6 +279,29 @@ def test_exa_answer_uses_smoke_cited_answer_shape() -> None:
     assert meta.request_payload == {"query": "What is the Florida appraisal clause dispute process?", "text": True}
     assert meta.estimated_cost_usd == pricing["search_1_25"]
     assert cache_store.calls[0]["run_id"] == "answer-run"
+
+
+def test_exa_research_uses_smoke_report_shape() -> None:
+    cache_store = FakeCacheStore()
+    config = default_config()
+    pricing = default_pricing()
+
+    response_json, meta = exa_research(
+        "Summarize the Florida CAT market outlook.",
+        config=config,
+        pricing=pricing,
+        exa_api_key="",
+        smoke_no_network=True,
+        run_id="research-run",
+        cache_store=cache_store,
+    )
+
+    assert response_json["report"].startswith("Mock research report for query:")
+    assert len(response_json["citations"]) == 3
+    assert meta.cache_hit is False
+    assert meta.request_payload == {"query": "Summarize the Florida CAT market outlook."}
+    assert meta.estimated_cost_usd == pricing["search_1_25"]
+    assert cache_store.calls[0]["run_id"] == "research-run"
 
 
 def test_exa_structured_search_uses_smoke_structured_output_shape() -> None:

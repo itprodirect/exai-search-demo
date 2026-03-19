@@ -12,11 +12,11 @@ import requests
 
 from .artifacts import ExperimentArtifactWriter
 from .cache import SqliteCacheStore
-from .client import build_exa_payload, exa_search_people
+from .client import build_exa_payload, exa_research, exa_search_people
 from .config import RuntimeState, default_config, default_pricing, load_runtime_state
 from .cost_model import estimate_cost_from_pricing
 from .evaluation import DEFAULT_RELEVANCE_KEYWORDS, evaluate_batch_queries, evaluate_result_set, load_benchmark_queries, load_benchmark_suites
-from .models import QueryEvaluationRecord
+from .models import QueryEvaluationRecord, ResearchRecord
 from .reporting import (
     build_before_after_report,
     build_cost_projections,
@@ -68,6 +68,12 @@ def build_parser() -> argparse.ArgumentParser:
     answer_parser.add_argument("query", help="Question to send to Exa.")
     answer_parser.add_argument("--json", action="store_true", dest="as_json", help="Emit structured JSON instead of a text summary.")
     answer_parser.set_defaults(handler=run_answer_command)
+
+    research_parser = subparsers.add_parser("research", help="Run a report-style research query.")
+    _add_common_runtime_args(research_parser)
+    research_parser.add_argument("query", help="Research prompt to send to Exa.")
+    research_parser.add_argument("--json", action="store_true", dest="as_json", help="Emit structured JSON instead of a text summary.")
+    research_parser.set_defaults(handler=run_research_command)
 
     find_similar_parser = subparsers.add_parser(
         "find-similar",
@@ -303,6 +309,92 @@ def run_answer_command(args: argparse.Namespace) -> int:
     if answer_payload["citations"]:
         print("")
         print(pd.DataFrame(answer_payload["citations"]).to_markdown(index=False))
+    return 0
+
+
+def run_research_command(args: argparse.Namespace) -> int:
+    config, pricing, runtime = _prepare_runtime(args)
+    cache_store = _cache_store(config)
+    response_json, meta = exa_research(
+        args.query,
+        config=config,
+        pricing=pricing,
+        exa_api_key=runtime.exa_api_key,
+        smoke_no_network=runtime.smoke_no_network,
+        run_id=runtime.run_id,
+        cache_store=cache_store,
+    )
+    record = ResearchRecord.from_runtime(args.query, response_json, meta)
+    research_payload = _build_research_artifact(
+        args.query,
+        request_payload=meta.request_payload,
+        response_json=response_json,
+        cache_hit=meta.cache_hit,
+        estimated_cost_usd=meta.estimated_cost_usd,
+    )
+
+    summary = cache_store.spend_so_far(run_id=runtime.run_id)
+    writer = ExperimentArtifactWriter(
+        run_id=runtime.run_id,
+        config=config,
+        pricing=pricing,
+        run_context={"workflow": "research"},
+        base_dir=args.artifact_dir,
+    )
+    writer.write_json_artifact("research.json", research_payload)
+    writer.write_summary(
+        summary,
+        projections={
+            "projection_basis": "observed_avg_uncached",
+            "unit_cost_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0),
+            "projected_100_queries_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0) * 100,
+            "projected_1000_queries_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0) * 1000,
+            "projected_10000_queries_usd": float(summary.get("avg_cost_per_uncached_query", 0.0) or 0.0) * 10000,
+        },
+        recommendation_data={"headline_recommendation": "Use for research-style report generation with human review"},
+        qualitative_notes=[
+            "Research workflow active: the response payload is stored in research.json.",
+            "Smoke mode active: research reports are mocked and costs are zero.",
+        ] if runtime.smoke_no_network else [
+            "Research workflow active: the response payload is stored in research.json.",
+        ],
+        extra={
+            "workflow": "research",
+            "research": {
+                "query": args.query,
+                "cache_hit": record.cache_hit,
+                "citation_count": record.citation_count,
+                "report_length": len(record.report_text or ""),
+            },
+        },
+    )
+
+    payload = {
+        "workflow": "research",
+        "run_id": runtime.run_id,
+        "artifact_dir": str(writer.artifact_dir),
+        "query": args.query,
+        "report": record.report_text,
+        "report_preview": record.report_preview,
+        "citations": [citation.to_dict() for citation in record.citations],
+        "citation_count": record.citation_count,
+        "cache_hit": record.cache_hit,
+        "request_id": record.request_id,
+        "summary": summary,
+    }
+    if args.as_json:
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    print(f"run_id: {runtime.run_id}")
+    print(f"artifact_dir: {writer.artifact_dir}")
+    print(f"cache_hit: {record.cache_hit}")
+    print(f"citation_count: {record.citation_count}")
+    print("")
+    print(record.report_text or "")
+    if record.citations:
+        print("")
+        print(pd.DataFrame([citation.to_dict() for citation in record.citations]).to_markdown(index=False))
     return 0
 
 
@@ -1119,6 +1211,35 @@ def _build_find_similar_artifact(
     }
 
 
+def _build_research_artifact(
+    query: str,
+    *,
+    request_payload: Mapping[str, Any],
+    response_json: Mapping[str, Any],
+    cache_hit: bool,
+    estimated_cost_usd: float,
+) -> Dict[str, Any]:
+    report_text = _extract_research_report_text(response_json)
+    citations = _normalize_citations(
+        response_json.get("citations")
+        if isinstance(response_json.get("citations"), list)
+        else response_json.get("sources")
+    )
+    return {
+        "query": query,
+        "request_payload": json.loads(json.dumps(dict(request_payload), ensure_ascii=False, default=str)),
+        "response": json.loads(json.dumps(dict(response_json), ensure_ascii=False, default=str)),
+        "request_id": response_json.get("requestId") if isinstance(response_json, Mapping) else None,
+        "cache_hit": cache_hit,
+        "estimated_cost_usd": float(estimated_cost_usd),
+        "actual_cost_usd": _research_actual_cost(response_json),
+        "report_text": report_text,
+        "report_preview": report_text[:220],
+        "citation_count": len(citations),
+        "citations": citations,
+    }
+
+
 def _build_answer_artifact(
     query: str,
     *,
@@ -1177,9 +1298,9 @@ def _normalize_citations(value: Any) -> list[Dict[str, Any]]:
             continue
         citations.append(
             {
-                "title": str(item.get("title") or "").strip(),
-                "url": str(item.get("url") or "").strip(),
-                "snippet": str(item.get("snippet") or item.get("text") or "").strip(),
+                "title": str(item.get("title") or item.get("name") or "").strip(),
+                "url": str(item.get("url") or item.get("sourceUrl") or "").strip(),
+                "snippet": str(item.get("snippet") or item.get("text") or item.get("passage") or "").strip(),
             }
         )
     return citations
@@ -1215,6 +1336,10 @@ def _answer_actual_cost(response_json: Mapping[str, Any]) -> float:
     return 0.0
 
 
+def _research_actual_cost(response_json: Mapping[str, Any]) -> float:
+    return _answer_actual_cost(response_json)
+
+
 def _structured_search_actual_cost(response_json: Mapping[str, Any]) -> float:
     return _answer_actual_cost(response_json)
 
@@ -1242,6 +1367,17 @@ def _extract_structured_output(response_json: Mapping[str, Any]) -> Any:
                 if value is not None:
                     return value
     return None
+
+
+def _extract_research_report_text(response_json: Mapping[str, Any]) -> str:
+    if not isinstance(response_json, Mapping):
+        return ""
+
+    for key in ("report", "reportText", "markdown", "summary", "text", "response", "content"):
+        value = response_json.get(key)
+        if value is not None:
+            return str(value).strip()
+    return ""
 
 
 def _load_json_schema(schema_path: Path) -> Dict[str, Any]:

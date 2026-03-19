@@ -218,6 +218,90 @@ class AnswerRecord:
 
 
 @dataclass(frozen=True)
+class ResearchRecord:
+    query: str
+    cache_hit: bool
+    request_hash: Optional[str]
+    request_payload: Dict[str, Any]
+    request_id: Optional[str]
+    created_at_utc: Optional[str]
+    estimated_cost_usd: float
+    actual_cost_usd: Optional[float]
+    report_text: Optional[str]
+    report_preview: str
+    citation_count: int
+    top_citation_title: Optional[str]
+    top_citation_url: Optional[str]
+    citations: List[AnswerCitation] = field(default_factory=list)
+
+    @classmethod
+    def from_runtime(
+        cls,
+        query: str,
+        response_json: Mapping[str, Any] | None,
+        meta: Any,
+    ) -> "ResearchRecord":
+        citations: List[Mapping[str, Any]] = []
+        if isinstance(response_json, Mapping):
+            citation_value = response_json.get("citations")
+            if not isinstance(citation_value, list):
+                citation_value = response_json.get("sources")
+            if not isinstance(citation_value, list):
+                citation_value = response_json.get("results")
+            if isinstance(citation_value, list):
+                citations = [item for item in citation_value if isinstance(item, Mapping)]
+
+        report_text = None
+        if isinstance(response_json, Mapping):
+            report_text = _optional_str(
+                response_json.get("report")
+                or response_json.get("reportText")
+                or response_json.get("markdown")
+                or response_json.get("summary")
+                or response_json.get("text")
+                or response_json.get("response")
+                or response_json.get("content")
+            )
+
+        parsed_citations = [AnswerCitation.from_api_citation(item) for item in citations]
+        top_citation = parsed_citations[0] if parsed_citations else None
+
+        return cls(
+            query=query,
+            cache_hit=bool(getattr(meta, "cache_hit", False)),
+            request_hash=_optional_str(getattr(meta, "request_hash", None)),
+            request_payload=_mapping_to_dict(getattr(meta, "request_payload", None)),
+            request_id=_optional_str(getattr(meta, "request_id", None)),
+            created_at_utc=_optional_str(getattr(meta, "created_at_utc", None)),
+            estimated_cost_usd=float(getattr(meta, "estimated_cost_usd", 0.0) or 0.0),
+            actual_cost_usd=_optional_float(getattr(meta, "actual_cost_usd", None)),
+            report_text=report_text,
+            report_preview=(report_text or "")[:220],
+            citation_count=len(parsed_citations),
+            top_citation_title=top_citation.title if top_citation else None,
+            top_citation_url=top_citation.url if top_citation else None,
+            citations=parsed_citations,
+        )
+
+    def to_flat_dict(self) -> Dict[str, Any]:
+        return {
+            "query": self.query,
+            "cache_hit": self.cache_hit,
+            "request_hash": self.request_hash,
+            "request_id": self.request_id,
+            "est_cost_usd": self.estimated_cost_usd,
+            "actual_cost_usd": self.actual_cost_usd,
+            "report_preview": self.report_preview,
+            "citation_count": self.citation_count,
+            "top_citation_title": self.top_citation_title,
+            "top_citation_url": self.top_citation_url,
+        }
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class StructuredOutputField:
     path: str
     value: Any

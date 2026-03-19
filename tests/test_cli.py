@@ -289,6 +289,19 @@ def test_find_similar_parser_accepts_seed_url() -> None:
     assert args.search_type == 'deep'
 
 
+def test_research_parser_accepts_query() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            'research',
+            'Summarize the Florida CAT market outlook.',
+        ]
+    )
+
+    assert args.command == 'research'
+    assert args.query == 'Summarize the Florida CAT market outlook.'
+
+
 def test_apply_search_overrides_maps_additive_controls_and_pricing() -> None:
     from exa_demo.config import default_config, default_pricing
 
@@ -440,6 +453,64 @@ def test_answer_command_smoke_emits_json_and_artifact(tmp_path, capsys) -> None:
     answer_payload = json.loads((artifact_dir / 'answer-run' / 'answer.json').read_text(encoding='utf-8'))
     assert answer_payload['citation_count'] == 2
     assert answer_payload['citations'][0]['title'] == 'Florida appraisal clause overview'
+
+
+def test_research_command_smoke_emits_json_and_artifact(tmp_path, capsys) -> None:
+    sqlite_path = tmp_path / 'cache.sqlite'
+    artifact_dir = tmp_path / 'artifacts'
+
+    exit_code = main(
+        [
+            'research',
+            'Summarize the Florida CAT market outlook.',
+            '--mode',
+            'smoke',
+            '--run-id',
+            'research-run',
+            '--sqlite-path',
+            str(sqlite_path),
+            '--artifact-dir',
+            str(artifact_dir),
+            '--json',
+        ]
+    )
+
+    output = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert output['workflow'] == 'research'
+    assert output['run_id'] == 'research-run'
+    assert output['citation_count'] == 3
+    assert 'Mock research report' in output['report']
+    assert (artifact_dir / 'research-run' / 'research.json').exists()
+    assert (artifact_dir / 'research-run' / 'summary.json').exists()
+    research_payload = json.loads((artifact_dir / 'research-run' / 'research.json').read_text(encoding='utf-8'))
+    assert research_payload['citation_count'] == 3
+    assert research_payload['citations'][0]['title'] == 'Mock Research Source 1'
+
+
+def test_research_command_live_requires_api_key(tmp_path, monkeypatch) -> None:
+    sqlite_path = tmp_path / 'cache.sqlite'
+    artifact_dir = tmp_path / 'artifacts'
+
+    from exa_demo import cli as cli_module
+
+    monkeypatch.setattr(cli_module, 'load_dotenv', lambda: None)
+    monkeypatch.delenv('EXA_API_KEY', raising=False)
+
+    with pytest.raises(RuntimeError, match='Missing EXA_API_KEY'):
+        main(
+            [
+                'research',
+                'Summarize the Florida CAT market outlook.',
+                '--mode',
+                'live',
+                '--sqlite-path',
+                str(sqlite_path),
+                '--artifact-dir',
+                str(artifact_dir),
+            ]
+        )
 
 
 def test_structured_search_command_smoke_emits_json_and_artifact(tmp_path, capsys) -> None:

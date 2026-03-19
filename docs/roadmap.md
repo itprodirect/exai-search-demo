@@ -46,7 +46,7 @@ These items expand the repo from a people-search harness into a broader Exa capa
 | Deep vs deep-reasoning comparison | Compare `auto`, `deep`, and `deep-reasoning` quality/cost tradeoffs for domain queries | Quantifies whether higher-cost search modes are worth using in this vertical | `Done` | Experiment artifacts, reporting | Repeatable comparison output shows quality and spend deltas across search types | [#8](https://github.com/itprodirect/exai-search-demo/issues/8) |
 | Structured output with `output_schema` | Extract structured entities directly from deep search responses | Enables downstream graph, analytics, and dataset workflows | `Done` | Typed models, deep-search support | Structured outputs are validated, stored, and demoed from a supported query set | [#9](https://github.com/itprodirect/exai-search-demo/issues/9) |
 | `/findSimilar` demo | Add seed-URL discovery for competitor, expert, and content expansion | Broadens discovery workflows beyond keyword search | `Done` | CLI or notebook demo conventions | Repo includes a reproducible `/findSimilar` workflow and evaluation framing | [#10](https://github.com/itprodirect/exai-search-demo/issues/10) |
-| `/research` demo | Add agentic research output for market and regulatory reports | Shows the most advanced report-generation capability in the Exa stack | `Later` | Typed models, artifact logging | Repo includes a documented research workflow and structured output/report handling | [#11](https://github.com/itprodirect/exai-search-demo/issues/11) |
+| `/research` demo | Add agentic research output for market and regulatory reports | Shows the most advanced report-generation capability in the Exa stack | `Done` | Typed models, artifact logging | Repo includes a documented research workflow and structured output/report handling | [#11](https://github.com/itprodirect/exai-search-demo/issues/11) |
 
 ## Phase 3 - Domain Coverage and Productization
 
@@ -54,9 +54,9 @@ These items extend the technical baseline into a more useful vertical demo for i
 
 | Roadmap item | Goal | Why it matters | Current status | Dependencies | Success criteria | GitHub issue |
 | --- | --- | --- | --- | --- | --- | --- |
-| Insurance/CAT query suites | Expand benchmark and demo suites for public adjusters, CAT law, appraisers, independent adjusters, and adjacent industries | Demonstrates domain depth instead of a narrow people-search slice | `Next` | Experiment artifacts, evaluation taxonomy | Query suites are versioned, documented, and runnable through the shared harness | [#13](https://github.com/itprodirect/exai-search-demo/issues/13) |
+| Insurance/CAT query suites | Expand benchmark and demo suites for public adjusters, CAT law, appraisers, independent adjusters, and adjacent industries | Demonstrates domain depth instead of a narrow people-search slice | `Done` | Experiment artifacts, evaluation taxonomy | Query suites are versioned, documented, and runnable through the shared harness | [#13](https://github.com/itprodirect/exai-search-demo/issues/13) |
 | Export/report outputs + demo gallery | Add CSV/JSON/report exports and a focused demo-gallery structure | Improves stakeholder review and repeatable presentation | `Later` | Experiment artifacts, API coverage demos | Repo can emit reusable outputs and has documented demo entrypoints by use case | [#14](https://github.com/itprodirect/exai-search-demo/issues/14) |
-| CI/security/integration follow-ons | Extend CI coverage, pre-commit/security checks, and document concrete integration boundaries | Keeps future expansion disciplined and safer to operate | `Later` | Foundation and reporting work | CI/test/security posture expands without weakening the current safe-default workflow | [#16](https://github.com/itprodirect/exai-search-demo/issues/16) |
+| CI/security/integration follow-ons | Extend CI coverage, pre-commit/security checks, and document concrete integration boundaries | Keeps future expansion disciplined and safer to operate | `Next` | Foundation and reporting work | CI/test/security posture expands without weakening the current safe-default workflow | [#16](https://github.com/itprodirect/exai-search-demo/issues/16) |
 
 ## Phase 4 - Documentation, Governance, and Repo Operations
 
@@ -78,6 +78,7 @@ Planned commands:
 ```powershell
 python -m exa_demo search "public adjuster Florida hurricane"
 python -m exa_demo answer "What is the Florida appraisal clause dispute process?"
+python -m exa_demo research "Summarize the Florida CAT market outlook."
 python -m exa_demo structured-search "independent adjuster florida catastrophe claims" --schema-file .\path\to\structured-schema.json
 python -m exa_demo find-similar "https://example.com/florida-appraisal-decision"
 python -m exa_demo eval --suite insurance
@@ -110,6 +111,7 @@ experiments/<run-id>/queries.jsonl
 experiments/<run-id>/results.jsonl
 experiments/<run-id>/summary.json
 experiments/<run-id>/answer.json
+experiments/<run-id>/research.json
 experiments/<run-id>/find_similar.json
 experiments/<run-id>/structured_output.json
 ```
