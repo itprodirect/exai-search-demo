@@ -23,17 +23,11 @@ def build_exa_payload(
         payload["includeDomains"] = config["include_domains"]
     if config["exclude_domains"]:
         payload["excludeDomains"] = config["exclude_domains"]
-    additional_queries = [
-        str(item).strip()
-        for item in (config.get("additional_queries") or [])
-        if str(item).strip()
-    ]
+    additional_queries = _clean_string_list(config.get("additional_queries"))
     if additional_queries:
         payload["additionalQueries"] = additional_queries
-    if config.get("start_published_date"):
-        payload["startPublishedDate"] = str(config["start_published_date"])
-    if config.get("end_published_date"):
-        payload["endPublishedDate"] = str(config["end_published_date"])
+    _assign_text_field(payload, "startPublishedDate", config.get("start_published_date"))
+    _assign_text_field(payload, "endPublishedDate", config.get("end_published_date"))
     if config.get("livecrawl"):
         payload["livecrawl"] = True
 
@@ -114,14 +108,10 @@ def build_find_similar_payload(
     if resolved_exclude_domains:
         payload["excludeDomains"] = resolved_exclude_domains
 
-    if start_crawl_date:
-        payload["startCrawlDate"] = str(start_crawl_date)
-    if end_crawl_date:
-        payload["endCrawlDate"] = str(end_crawl_date)
-    if start_published_date:
-        payload["startPublishedDate"] = str(start_published_date)
-    if end_published_date:
-        payload["endPublishedDate"] = str(end_published_date)
+    _assign_text_field(payload, "startCrawlDate", start_crawl_date)
+    _assign_text_field(payload, "endCrawlDate", end_crawl_date)
+    _assign_text_field(payload, "startPublishedDate", start_published_date)
+    _assign_text_field(payload, "endPublishedDate", end_published_date)
     if exclude_source_domain is not None:
         payload["excludeSourceDomain"] = bool(exclude_source_domain)
     if context is not None:
@@ -145,3 +135,11 @@ def _clean_string_list(values: Any) -> list[str]:
         if text:
             result.append(text)
     return result
+
+
+def _assign_text_field(payload: Dict[str, Any], field_name: str, value: Any) -> None:
+    if value is None:
+        return
+    text = str(value).strip()
+    if text:
+        payload[field_name] = text

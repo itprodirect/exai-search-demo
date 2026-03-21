@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Mapping
 
+
 def build_find_similar_artifact(
     seed_url: str,
     *,
@@ -13,17 +14,21 @@ def build_find_similar_artifact(
     estimated_cost_usd: float,
 ) -> Dict[str, Any]:
     results = _normalize_find_similar_results(response_json.get("results"))
-    return {
+    payload = {
         "seed_url": seed_url,
-        "request_payload": json.loads(json.dumps(dict(request_payload), ensure_ascii=False, default=str)),
-        "response": json.loads(json.dumps(dict(response_json), ensure_ascii=False, default=str)),
-        "request_id": response_json.get("requestId") if isinstance(response_json, Mapping) else None,
-        "cache_hit": cache_hit,
-        "estimated_cost_usd": float(estimated_cost_usd),
-        "actual_cost_usd": find_similar_actual_cost(response_json),
         "result_count": len(results),
         "results": results,
         "top_result": results[0] if results else None,
+    }
+    return {
+        **_artifact_base(
+            request_payload=request_payload,
+            response_json=response_json,
+            cache_hit=cache_hit,
+            estimated_cost_usd=estimated_cost_usd,
+            actual_cost_usd=find_similar_actual_cost(response_json),
+        ),
+        **payload,
     }
 
 
@@ -41,18 +46,22 @@ def build_research_artifact(
         if isinstance(response_json.get("citations"), list)
         else response_json.get("sources")
     )
-    return {
+    payload = {
         "query": query,
-        "request_payload": json.loads(json.dumps(dict(request_payload), ensure_ascii=False, default=str)),
-        "response": json.loads(json.dumps(dict(response_json), ensure_ascii=False, default=str)),
-        "request_id": response_json.get("requestId") if isinstance(response_json, Mapping) else None,
-        "cache_hit": cache_hit,
-        "estimated_cost_usd": float(estimated_cost_usd),
-        "actual_cost_usd": research_actual_cost(response_json),
         "report_text": report_text,
         "report_preview": report_text[:220],
         "citation_count": len(citations),
         "citations": citations,
+    }
+    return {
+        **_artifact_base(
+            request_payload=request_payload,
+            response_json=response_json,
+            cache_hit=cache_hit,
+            estimated_cost_usd=estimated_cost_usd,
+            actual_cost_usd=research_actual_cost(response_json),
+        ),
+        **payload,
     }
 
 
@@ -66,17 +75,21 @@ def build_answer_artifact(
 ) -> Dict[str, Any]:
     answer_text = str(response_json.get("answer") or response_json.get("text") or "").strip()
     citations = _normalize_citations(response_json.get("citations"))
-    return {
+    payload = {
         "query": query,
-        "request_payload": dict(request_payload),
-        "response": json.loads(json.dumps(dict(response_json), ensure_ascii=False, default=str)),
-        "request_id": response_json.get("requestId") if isinstance(response_json, Mapping) else None,
-        "cache_hit": cache_hit,
-        "estimated_cost_usd": float(estimated_cost_usd),
-        "actual_cost_usd": answer_actual_cost(response_json),
         "answer_text": answer_text,
         "citation_count": len(citations),
         "citations": citations,
+    }
+    return {
+        **_artifact_base(
+            request_payload=request_payload,
+            response_json=response_json,
+            cache_hit=cache_hit,
+            estimated_cost_usd=estimated_cost_usd,
+            actual_cost_usd=answer_actual_cost(response_json),
+        ),
+        **payload,
     }
 
 
@@ -90,17 +103,21 @@ def build_structured_search_artifact(
     estimated_cost_usd: float,
 ) -> Dict[str, Any]:
     structured_output = _extract_structured_output(response_json)
-    return {
+    payload = {
         "query": query,
         "schema_file": str(schema_path),
-        "request_payload": json.loads(json.dumps(dict(request_payload), ensure_ascii=False, default=str)),
-        "response": json.loads(json.dumps(dict(response_json), ensure_ascii=False, default=str)),
-        "request_id": response_json.get("requestId") if isinstance(response_json, Mapping) else None,
-        "cache_hit": cache_hit,
-        "estimated_cost_usd": float(estimated_cost_usd),
-        "actual_cost_usd": structured_search_actual_cost(response_json),
         "structured_output": structured_output,
         "structured_output_keys": sorted(structured_output.keys()) if isinstance(structured_output, Mapping) else [],
+    }
+    return {
+        **_artifact_base(
+            request_payload=request_payload,
+            response_json=response_json,
+            cache_hit=cache_hit,
+            estimated_cost_usd=estimated_cost_usd,
+            actual_cost_usd=structured_search_actual_cost(response_json),
+        ),
+        **payload,
     }
 
 
@@ -206,6 +223,38 @@ def load_json_schema(schema_path: Path) -> Dict[str, Any]:
     if not isinstance(schema, Mapping):
         raise ValueError(f"Schema file must contain a JSON object: {schema_path}")
     return dict(schema)
+
+
+def _artifact_base(
+    *,
+    request_payload: Mapping[str, Any],
+    response_json: Mapping[str, Any],
+    cache_hit: bool,
+    estimated_cost_usd: float,
+    actual_cost_usd: float,
+) -> Dict[str, Any]:
+    return {
+        "request_payload": _jsonable_mapping(request_payload),
+        "response": _jsonable_mapping(response_json),
+        "request_id": _request_id(response_json),
+        "cache_hit": cache_hit,
+        "estimated_cost_usd": float(estimated_cost_usd),
+        "actual_cost_usd": float(actual_cost_usd),
+    }
+
+
+def _jsonable_mapping(value: Mapping[str, Any]) -> Dict[str, Any]:
+    return json.loads(json.dumps(dict(value), ensure_ascii=False, default=str))
+
+
+def _request_id(response_json: Mapping[str, Any]) -> str | None:
+    if not isinstance(response_json, Mapping):
+        return None
+    value = response_json.get("requestId")
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 def _coerce_optional_float(value: Any) -> float | None:
