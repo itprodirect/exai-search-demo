@@ -171,6 +171,24 @@ def test_experiment_artifact_writer_writes_text_and_csv_artifacts(tmp_path) -> N
     assert {item['filename'] for item in manifest_payload['artifacts']} >= {'config.json', 'research.md', 'results.csv'}
 
 
+def test_experiment_artifact_writer_rewrites_manifest_entry_for_same_filename(tmp_path) -> None:
+    writer = ExperimentArtifactWriter(
+        run_id='manifest-run',
+        config={'mode': 'smoke'},
+        pricing={'search_1_25': 0.005},
+        base_dir=tmp_path,
+    )
+
+    writer.write_json_artifact('answer.json', {'query': 'first'})
+    writer.write_json_artifact('answer.json', {'query': 'second'})
+
+    manifest_payload = json.loads((tmp_path / 'manifest-run' / 'manifest.json').read_text(encoding='utf-8'))
+    answer_entries = [item for item in manifest_payload['artifacts'] if item['filename'] == 'answer.json']
+
+    assert len(answer_entries) == 1
+    assert json.loads((tmp_path / 'manifest-run' / 'answer.json').read_text(encoding='utf-8'))['query'] == 'second'
+
+
 def test_experiment_artifact_writer_writes_structured_output_artifact(tmp_path) -> None:
     writer = ExperimentArtifactWriter(
         run_id='structured-run',

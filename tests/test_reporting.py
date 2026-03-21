@@ -197,6 +197,72 @@ def test_render_and_write_comparison_markdown(tmp_path) -> None:
     assert '## Query Outcomes' in written.read_text(encoding='utf-8')
 
 
+def test_build_before_after_report_uses_all_group_when_no_shared_context(tmp_path) -> None:
+    baseline_dir = tmp_path / 'baseline-no-context'
+    baseline_dir.mkdir()
+
+    (baseline_dir / 'summary.json').write_text(
+        json.dumps(
+            {
+                'run_id': 'baseline-no-context',
+                'spent_usd': 0.10,
+                'avg_cost_per_uncached_query': 0.05,
+                'observed_relevance_rate': 0.25,
+                'observed_confidence_score': 0.25,
+                'observed_failure_rate': 1.0,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + '\n',
+        encoding='utf-8',
+    )
+
+    (baseline_dir / 'results.jsonl').write_text(
+        json.dumps(
+            {
+                'query': 'q1',
+                'result_count': 0,
+                'relevance_keywords_present': False,
+                'linkedin_present': False,
+                'failure_reasons': ['no_results'],
+                'confidence_score': 0.0,
+                'resolved_search_type': 'auto',
+            },
+            sort_keys=True,
+        )
+        + '\n',
+        encoding='utf-8',
+    )
+
+    report = build_before_after_report(
+        baseline_dir,
+        after_run_id='candidate-no-context',
+        after_summary_metrics={'spent_usd': 0.02, 'avg_cost_per_uncached_query': 0.01},
+        after_batch_df=pd.DataFrame(
+            [
+                {
+                    'query': 'q1',
+                    'result_count': 1,
+                    'relevance_keywords_present': True,
+                    'linkedin_present': True,
+                    'failure_reasons': [],
+                    'confidence_score': 0.95,
+                    'resolved_search_type': 'deep',
+                }
+            ]
+        ),
+        after_recommendation={
+            'observed_relevance_rate': 1.0,
+            'observed_confidence_score': 0.95,
+            'observed_failure_rate': 0.0,
+        },
+    )
+
+    assert report['comparison_context']['group_columns'] == []
+    assert report['grouped_query_outcomes'][0]['group']['group'] == 'all'
+
+
 def test_render_research_markdown_includes_report_and_citations() -> None:
     markdown = render_research_markdown(
         query='Summarize the Florida CAT market outlook.',

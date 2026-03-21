@@ -2,12 +2,25 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
-from urllib.parse import urlparse
+from typing import Any, Dict, Mapping, Optional, Tuple
 
 import requests
 
-from .cache import SqliteCacheStore, parse_actual_cost, request_hash_for_payload, sha256_hex
+from .cache import SqliteCacheStore, parse_actual_cost, request_hash_for_payload
+from .client_payloads import (
+    build_answer_payload,
+    build_exa_payload,
+    build_find_similar_payload,
+    build_research_payload,
+    build_structured_search_payload,
+)
+from .client_smoke import (
+    mock_exa_answer_response,
+    mock_exa_find_similar_response,
+    mock_exa_research_response,
+    mock_exa_response,
+    mock_exa_structured_search_response,
+)
 from .cost_model import estimate_cost_from_pricing
 
 
@@ -21,339 +34,6 @@ class ExaCallMeta:
     request_id: Optional[str]
     resolved_search_type: Optional[str]
     created_at_utc: str
-
-
-def build_exa_payload(
-    query: str,
-    config: Mapping[str, Any],
-    *,
-    num_results: Optional[int] = None,
-) -> Dict[str, Any]:
-    resolved_num_results = int(num_results or config["num_results"])
-    payload: Dict[str, Any] = {
-        "query": query,
-        "type": config["search_type"],
-        "category": config["category"],
-        "numResults": resolved_num_results,
-        "userLocation": config["user_location"],
-        "moderation": config["moderation"],
-    }
-
-    if config["include_domains"]:
-        payload["includeDomains"] = config["include_domains"]
-    if config["exclude_domains"]:
-        payload["excludeDomains"] = config["exclude_domains"]
-    additional_queries = [
-        str(item).strip()
-        for item in (config.get("additional_queries") or [])
-        if str(item).strip()
-    ]
-    if additional_queries:
-        payload["additionalQueries"] = additional_queries
-    if config.get("start_published_date"):
-        payload["startPublishedDate"] = str(config["start_published_date"])
-    if config.get("end_published_date"):
-        payload["endPublishedDate"] = str(config["end_published_date"])
-    if config.get("livecrawl"):
-        payload["livecrawl"] = True
-
-    contents: Dict[str, Any] = {}
-    if config["use_text"]:
-        contents["text"] = True
-    if config["use_highlights"]:
-        contents["highlights"] = {
-            "highlightsPerUrl": config["highlights_per_url"],
-            "numSentences": config["highlight_num_sentences"],
-        }
-    if config["use_summary"]:
-        contents["summary"] = {
-            "query": "Summarize the person's professional background and insurance/CAT relevance."
-        }
-
-    if contents:
-        payload["contents"] = contents
-
-    return payload
-
-
-def build_answer_payload(query: str) -> Dict[str, Any]:
-    return {"query": query, "text": True}
-
-
-def build_research_payload(query: str) -> Dict[str, Any]:
-    return {"query": query}
-
-
-def build_structured_search_payload(
-    query: str,
-    config: Mapping[str, Any],
-    output_schema: Mapping[str, Any],
-    *,
-    num_results: Optional[int] = None,
-) -> Dict[str, Any]:
-    payload = build_exa_payload(query, config, num_results=num_results)
-    payload["outputSchema"] = dict(output_schema)
-    return payload
-
-
-def build_find_similar_payload(
-    url: str,
-    config: Mapping[str, Any],
-    *,
-    num_results: Optional[int] = None,
-    include_domains: Optional[Sequence[str]] = None,
-    exclude_domains: Optional[Sequence[str]] = None,
-    start_crawl_date: Optional[str] = None,
-    end_crawl_date: Optional[str] = None,
-    start_published_date: Optional[str] = None,
-    end_published_date: Optional[str] = None,
-    exclude_source_domain: Optional[bool] = None,
-    category: Optional[str] = None,
-    text: Any = None,
-    highlights: Any = None,
-    context: Any = None,
-    moderation: Optional[bool] = None,
-) -> Dict[str, Any]:
-    resolved_num_results = int(num_results or config["num_results"])
-    payload: Dict[str, Any] = {
-        "url": url,
-        "numResults": resolved_num_results,
-        "category": str(category or config["category"]),
-        "moderation": bool(config["moderation"] if moderation is None else moderation),
-    }
-
-    resolved_include_domains = _clean_string_list(include_domains if include_domains is not None else config["include_domains"])
-    if resolved_include_domains:
-        payload["includeDomains"] = resolved_include_domains
-
-    resolved_exclude_domains = _clean_string_list(exclude_domains if exclude_domains is not None else config["exclude_domains"])
-    if resolved_exclude_domains:
-        payload["excludeDomains"] = resolved_exclude_domains
-
-    if start_crawl_date:
-        payload["startCrawlDate"] = str(start_crawl_date)
-    if end_crawl_date:
-        payload["endCrawlDate"] = str(end_crawl_date)
-    if start_published_date:
-        payload["startPublishedDate"] = str(start_published_date)
-    if end_published_date:
-        payload["endPublishedDate"] = str(end_published_date)
-    if exclude_source_domain is not None:
-        payload["excludeSourceDomain"] = bool(exclude_source_domain)
-    if context is not None:
-        payload["context"] = context
-
-    resolved_text = True if text is None else text
-    if resolved_text is not None:
-        payload["text"] = resolved_text
-    if highlights is not None:
-        payload["highlights"] = highlights
-
-    return payload
-
-
-def mock_exa_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
-    query = str(payload.get("query") or "")
-    num_results = int(payload.get("numResults") or 5)
-    contents = payload.get("contents") or {}
-    wants_highlights = isinstance(contents.get("highlights"), dict)
-    wants_text = contents.get("text") is True
-    wants_summary = isinstance(contents.get("summary"), dict)
-
-    slug = sha256_hex(query)[:8]
-    results = []
-    for index in range(num_results):
-        item: Dict[str, Any] = {
-            "id": f"mock-{slug}-{index + 1}",
-            "title": f"Mock Professional Result {index + 1} - CAT loss / insurance expert",
-            "url": f"https://www.linkedin.com/in/mock-{slug}-{index + 1}",
-        }
-        if wants_highlights:
-            item["highlights"] = [
-                f"Mock highlight for query: {query}. Public professional profile for insurance litigation and expert witness context."
-            ]
-            item["highlightScores"] = [0.99]
-        if wants_text:
-            item["text"] = f"Mock text body for query: {query}. Public/professional info only."
-        if wants_summary:
-            item["summary"] = "Mock summary: professional background relevant to insurance/CAT-loss workflows."
-        results.append(item)
-
-    return {
-        "requestId": f"smoke-{slug}",
-        "resolvedSearchType": str(payload.get("type") or "auto"),
-        "results": results,
-        "costDollars": {"search": 0.0, "contents": 0.0, "total": 0.0},
-        "_smokeMode": True,
-    }
-
-
-def mock_exa_find_similar_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
-    url = str(payload.get("url") or "")
-    slug = sha256_hex(url)[:8]
-    num_results = int(payload.get("numResults") or 5)
-    wants_text = payload.get("text") is not False
-    wants_highlights = payload.get("highlights") is not None and payload.get("highlights") is not False
-    wants_context = payload.get("context") is not None and payload.get("context") is not False
-
-    source_domain = _domain_from_url(url)
-    result_domain = f"related-{slug}.example.com" if bool(payload.get("excludeSourceDomain")) else source_domain
-    mock_titles = [
-        "Florida Insurance Litigation Firm",
-        "Public Adjuster and Catastrophe Claims Team",
-        "Property Insurance Appraisal Resources",
-    ]
-    mock_snippets = [
-        "Mock result for seed-url discovery and competitor analysis.",
-        "Mock result for expert discovery and similar professional pages.",
-        "Mock result for content discovery around appraisal and coverage disputes.",
-    ]
-    results = []
-    for index in range(num_results):
-        result_url = f"https://{result_domain}/similar/{slug}-{index + 1}"
-        title = (
-            mock_titles[index]
-            if index < len(mock_titles)
-            else f"Mock Similar Result {index + 1} - CAT loss / insurance expert"
-        )
-        snippet = (
-            mock_snippets[index]
-            if index < len(mock_snippets)
-            else "Mock result for seed-url discovery and similar-page analysis."
-        )
-        item: Dict[str, Any] = {
-            "id": result_url,
-            "title": title,
-            "url": result_url,
-            "publishedDate": "2026-03-18",
-            "author": "Mock Analyst",
-            "snippet": snippet,
-            "score": round(0.98 - (index * 0.04), 2),
-        }
-        if wants_text:
-            item["text"] = f"Mock similar text for seed URL: {url}. Public/professional info only."
-        if wants_highlights:
-            item["highlights"] = [
-                f"Mock highlight for seed URL: {url}. Public professional profile for insurance litigation and expert witness context."
-            ]
-            item["highlightScores"] = [0.99]
-        results.append(item)
-
-    response: Dict[str, Any] = {
-        "requestId": f"smoke-{slug}",
-        "results": results,
-        "costDollars": {"search": 0.0, "contents": 0.0, "total": 0.0},
-        "_smokeMode": True,
-    }
-    if wants_context:
-        response["context"] = (
-            f"Mock context for seed URL {url}. "
-            f"Similar results are generated from {result_domain}."
-        )
-    return response
-
-
-def mock_exa_structured_search_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
-    query = str(payload.get("query") or "")
-    slug = sha256_hex(query)[:8]
-    num_results = int(payload.get("numResults") or 5)
-    schema = payload.get("outputSchema") if isinstance(payload.get("outputSchema"), Mapping) else {}
-    structured_output = _mock_structured_output(schema, query)
-    properties = schema.get("properties") if isinstance(schema.get("properties"), Mapping) else {}
-    structured_data = {
-        "query": query,
-        "schema_title": str(schema.get("title") or "structured-output"),
-        "field_names": sorted(str(key) for key in properties.keys()),
-        "record_count": 1,
-        "records": [
-            {
-                "name": "Mock Structured Record",
-                "role": "Insurance expert witness",
-                "firm": "Mock Advisory Group",
-                "state_licenses": ["FL"],
-                "specializations": ["catastrophe claims", "appraisal"],
-                "notable_cases_or_experience": "Mock structured output for smoke testing.",
-            }
-        ],
-    }
-
-    results = []
-    for index in range(num_results):
-        item: Dict[str, Any] = {
-            "id": f"mock-{slug}-{index + 1}",
-            "title": f"Mock Structured Result {index + 1} - CAT loss / insurance expert",
-            "url": f"https://www.linkedin.com/in/mock-structured-{slug}-{index + 1}",
-        }
-        results.append(item)
-
-    return {
-        "requestId": f"smoke-{slug}",
-        "resolvedSearchType": str(payload.get("type") or "auto"),
-        "results": results,
-        "structuredData": structured_data,
-        "structuredOutput": structured_output,
-        "costDollars": {"search": 0.0, "contents": 0.0, "total": 0.0},
-        "_smokeMode": True,
-    }
-
-
-def mock_exa_answer_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
-    query = str(payload.get("query") or "")
-    slug = sha256_hex(query)[:8]
-    citations = [
-        {
-            "title": "Florida appraisal clause overview",
-            "url": f"https://example.com/mock-answer/{slug}/1",
-            "snippet": "Mock citation about appraisal clause dispute flow.",
-            "publishedDate": "2026-03-18",
-            "author": "Mock Analyst",
-        },
-        {
-            "title": "Insurance claim dispute process",
-            "url": f"https://example.com/mock-answer/{slug}/2",
-            "snippet": "Mock citation about dispute resolution steps.",
-            "publishedDate": "2026-03-18",
-            "author": "Mock Analyst",
-        },
-    ]
-    return {
-        "requestId": f"smoke-{slug}",
-        "answer": f"Mock answer for query: {query}. Public/professional info only.",
-        "citations": citations,
-        "costDollars": {"search": 0.0, "contents": 0.0, "total": 0.0},
-        "_smokeMode": True,
-    }
-
-
-def mock_exa_research_response(payload: Mapping[str, Any]) -> Dict[str, Any]:
-    query = str(payload.get("query") or "")
-    slug = sha256_hex(query)[:8]
-    citations = [
-        {
-            "title": f"Mock Research Source {index + 1}",
-            "url": f"https://example.com/mock-research/{slug}/{index + 1}",
-            "snippet": (
-                f"Mock research source snippet {index + 1} for query: {query}. "
-                "Public/professional info only."
-            ),
-            "publishedDate": "2026-03-19",
-            "author": "Mock Analyst",
-        }
-        for index in range(3)
-    ]
-    return {
-        "requestId": f"smoke-{slug}",
-        "report": (
-            f"Mock research report for query: {query}.\n\n"
-            "Key takeaways:\n"
-            "- Market conditions remain dynamic.\n"
-            "- Regulatory and litigation monitoring should continue.\n"
-            "- Human review is required before operational use."
-        ),
-        "citations": citations,
-        "costDollars": {"search": 0.0, "contents": 0.0, "total": 0.0},
-        "_smokeMode": True,
-    }
 
 
 def exa_http_call(
@@ -423,17 +103,12 @@ def exa_search_people(
         ),
     )
 
-    meta = ExaCallMeta(
+    return response_json, _build_call_meta(
+        payload=payload,
+        response_json=response_json,
         cache_hit=cache_hit,
-        request_hash=request_hash_for_payload(payload),
-        request_payload=payload,
-        estimated_cost_usd=estimated_cost,
-        actual_cost_usd=parse_actual_cost(response_json),
-        request_id=response_json.get("requestId") if isinstance(response_json, dict) else None,
-        resolved_search_type=response_json.get("resolvedSearchType") if isinstance(response_json, dict) else None,
-        created_at_utc=datetime.now(timezone.utc).isoformat(),
+        estimated_cost=estimated_cost,
     )
-    return response_json, meta
 
 
 def exa_structured_search(
@@ -448,7 +123,9 @@ def exa_structured_search(
     output_schema: Mapping[str, Any],
     num_results: Optional[int] = None,
 ) -> Tuple[Dict[str, Any], ExaCallMeta]:
-    payload = build_structured_search_payload(query, config, output_schema, num_results=num_results)
+    payload = build_structured_search_payload(
+        query, config, output_schema, num_results=num_results
+    )
     estimated_cost = estimate_cost_from_pricing(
         payload,
         int(payload["numResults"]),
@@ -470,17 +147,12 @@ def exa_structured_search(
         ),
     )
 
-    meta = ExaCallMeta(
+    return response_json, _build_call_meta(
+        payload=payload,
+        response_json=response_json,
         cache_hit=cache_hit,
-        request_hash=request_hash_for_payload(payload),
-        request_payload=payload,
-        estimated_cost_usd=estimated_cost,
-        actual_cost_usd=parse_actual_cost(response_json),
-        request_id=response_json.get("requestId") if isinstance(response_json, dict) else None,
-        resolved_search_type=response_json.get("resolvedSearchType") if isinstance(response_json, dict) else None,
-        created_at_utc=datetime.now(timezone.utc).isoformat(),
+        estimated_cost=estimated_cost,
     )
-    return response_json, meta
 
 
 def exa_find_similar(
@@ -493,8 +165,8 @@ def exa_find_similar(
     run_id: str,
     cache_store: SqliteCacheStore,
     num_results: Optional[int] = None,
-    include_domains: Optional[Sequence[str]] = None,
-    exclude_domains: Optional[Sequence[str]] = None,
+    include_domains: Optional[list[str]] = None,
+    exclude_domains: Optional[list[str]] = None,
     start_crawl_date: Optional[str] = None,
     end_crawl_date: Optional[str] = None,
     start_published_date: Optional[str] = None,
@@ -544,17 +216,12 @@ def exa_find_similar(
         ),
     )
 
-    meta = ExaCallMeta(
+    return response_json, _build_call_meta(
+        payload=payload,
+        response_json=response_json,
         cache_hit=cache_hit,
-        request_hash=request_hash_for_payload(payload),
-        request_payload=payload,
-        estimated_cost_usd=estimated_cost,
-        actual_cost_usd=parse_actual_cost(response_json),
-        request_id=response_json.get("requestId") if isinstance(response_json, dict) else None,
-        resolved_search_type=response_json.get("resolvedSearchType") if isinstance(response_json, dict) else None,
-        created_at_utc=datetime.now(timezone.utc).isoformat(),
+        estimated_cost=estimated_cost,
     )
-    return response_json, meta
 
 
 def exa_answer(
@@ -584,17 +251,13 @@ def exa_answer(
         ),
     )
 
-    meta = ExaCallMeta(
+    return response_json, _build_call_meta(
+        payload=payload,
+        response_json=response_json,
         cache_hit=cache_hit,
-        request_hash=request_hash_for_payload(payload),
-        request_payload=payload,
-        estimated_cost_usd=estimated_cost,
-        actual_cost_usd=parse_actual_cost(response_json),
-        request_id=response_json.get("requestId") if isinstance(response_json, dict) else None,
+        estimated_cost=estimated_cost,
         resolved_search_type=None,
-        created_at_utc=datetime.now(timezone.utc).isoformat(),
     )
-    return response_json, meta
 
 
 def exa_research(
@@ -624,17 +287,39 @@ def exa_research(
         ),
     )
 
-    meta = ExaCallMeta(
+    return response_json, _build_call_meta(
+        payload=payload,
+        response_json=response_json,
+        cache_hit=cache_hit,
+        estimated_cost=estimated_cost,
+        resolved_search_type=None,
+    )
+
+
+def _build_call_meta(
+    *,
+    payload: Dict[str, Any],
+    response_json: Any,
+    cache_hit: bool,
+    estimated_cost: float,
+    resolved_search_type: Optional[str] = ...,
+) -> ExaCallMeta:
+    if resolved_search_type is ...:
+        resolved_search_type = (
+            response_json.get("resolvedSearchType")
+            if isinstance(response_json, dict)
+            else None
+        )
+    return ExaCallMeta(
         cache_hit=cache_hit,
         request_hash=request_hash_for_payload(payload),
         request_payload=payload,
         estimated_cost_usd=estimated_cost,
         actual_cost_usd=parse_actual_cost(response_json),
         request_id=response_json.get("requestId") if isinstance(response_json, dict) else None,
-        resolved_search_type=None,
+        resolved_search_type=resolved_search_type,
         created_at_utc=datetime.now(timezone.utc).isoformat(),
     )
-    return response_json, meta
 
 
 def _estimate_answer_cost_from_pricing(pricing: Mapping[str, float]) -> float:
@@ -672,49 +357,3 @@ def _find_similar_cost_payload(payload: Mapping[str, Any]) -> Dict[str, Any]:
     if contents:
         cost_payload["contents"] = contents
     return cost_payload
-
-
-def _mock_structured_output(schema: Any, query: str, *, path: str = "output") -> Any:
-    if isinstance(schema, Mapping):
-        schema_type = schema.get("type")
-        if schema_type == "object":
-            properties = schema.get("properties")
-            if isinstance(properties, Mapping):
-                return {
-                    str(key): _mock_structured_output(value, query, path=f"{path}.{key}")
-                    for key, value in properties.items()
-                }
-            return {"value": f"Mock {path} for query: {query}"}
-        if schema_type == "array":
-            items = schema.get("items")
-            return [_mock_structured_output(items, query, path=f"{path}[0]")]
-        if schema_type == "string":
-            return f"Mock {path.rsplit('.', 1)[-1]} for query: {query}"
-        if schema_type == "integer":
-            return 1
-        if schema_type == "number":
-            return 1.0
-        if schema_type == "boolean":
-            return True
-        enum_values = schema.get("enum")
-        if isinstance(enum_values, list) and enum_values:
-            return enum_values[0]
-    return f"Mock {path} for query: {query}"
-
-
-def _clean_string_list(values: Any) -> list[str]:
-    if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
-        return []
-    result: list[str] = []
-    for value in values:
-        text = str(value).strip()
-        if text:
-            result.append(text)
-    return result
-
-
-def _domain_from_url(value: str) -> str:
-    parsed = urlparse(value)
-    if parsed.netloc:
-        return parsed.netloc
-    return "example.com"

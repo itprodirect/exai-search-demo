@@ -55,7 +55,12 @@ flowchart TD
 
 ## Repo Map
 
-- `src/exa_demo/`: reusable package modules for client calls, models, config, evaluation, artifacts, reporting, cache, and safety
+- `src/exa_demo/cli.py`: thin CLI entrypoint; parser/runtime/compare helpers live in `cli_parser.py`, `cli_runtime.py`, and `cli_eval.py`
+- `src/exa_demo/client.py`: stable transport facade; payload builders and smoke responders live in `client_payloads.py` and `client_smoke.py`
+- `src/exa_demo/models.py`: stable model facade; shared API/result records live in `api_models.py`
+- `src/exa_demo/reporting.py`: summary/research facade; comparison analysis/rendering lives in `comparison_reporting.py` and `comparison_analysis.py`
+- `src/exa_demo/artifacts.py`: experiment writer; manifest/serialization helpers live in `artifact_manifest.py`
+- `src/exa_demo/`: remaining reusable package modules for config, evaluation, workflows, cache, and safety
 - `tests/`: CLI, client, model, artifact, script, and evaluation coverage
 - `benchmarks/insurance_cat_queries.json`: named query suites used by notebook and CLI evaluation
 - `experiments/`: runtime artifact root for workflow commands; local runs stay untracked by default
@@ -350,7 +355,7 @@ For a from-scratch architecture critique and refactor roadmap, see `docs/rebuild
 - GitHub issue tracker mapping: [docs/issue-tracker.md](docs/issue-tracker.md)
 - ADR index: [docs/adr/README.md](docs/adr/README.md)
 - Session note template: [docs/sessions/README.md](docs/sessions/README.md)
-- Latest implementation session: [docs/sessions/2026-03-19-phase3-closeout-audit.md](docs/sessions/2026-03-19-phase3-closeout-audit.md)
+- Latest implementation session: [docs/sessions/2026-03-20-phase4-refactor-decomposition.md](docs/sessions/2026-03-20-phase4-refactor-decomposition.md)
 
 ## Guardrails
 
