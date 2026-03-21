@@ -55,86 +55,60 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 
 def run_search_command(args: argparse.Namespace) -> int:
-    config, pricing, runtime = _prepare_runtime(args)
+    config, pricing, runtime, runtime_metadata = _prepared_runtime_context(args)
     payload, record = run_search_workflow(
         query=args.query,
         artifact_dir=args.artifact_dir,
         config=config,
         pricing=pricing,
         runtime=runtime,
-        runtime_metadata=_runtime_metadata(runtime),
+        runtime_metadata=runtime_metadata,
     )
     emit_search_payload(payload, record=record, as_json=bool(args.as_json))
     return 0
 
 
 def run_eval_command(args: argparse.Namespace) -> int:
-    payload = run_eval_workflow(
-        args,
-        prepare_runtime=_prepare_runtime,
-        runtime_metadata=_runtime_metadata,
-        namespace_with_overrides=_namespace_with_overrides,
-        run_eval_workflow_impl=run_ranked_eval_workflow,
-    )
+    payload = _run_cli_eval_workflow(args)
     emit_eval_payload(payload, as_json=bool(args.as_json))
     return 0
 
 
 def run_answer_command(args: argparse.Namespace) -> int:
-    config, pricing, runtime = _prepare_runtime(args)
-    payload = run_answer_workflow(
+    return _run_runtime_payload_command(
+        args,
+        workflow_runner=run_answer_workflow,
+        payload_emitter=emit_answer_payload,
         query=args.query,
-        artifact_dir=args.artifact_dir,
-        config=config,
-        pricing=pricing,
-        runtime=runtime,
-        runtime_metadata=_runtime_metadata(runtime),
     )
-    emit_answer_payload(payload, as_json=bool(args.as_json))
-    return 0
 
 
 def run_research_command(args: argparse.Namespace) -> int:
-    config, pricing, runtime = _prepare_runtime(args)
-    payload = run_research_workflow(
+    return _run_runtime_payload_command(
+        args,
+        workflow_runner=run_research_workflow,
+        payload_emitter=emit_research_payload,
         query=args.query,
-        artifact_dir=args.artifact_dir,
-        config=config,
-        pricing=pricing,
-        runtime=runtime,
-        runtime_metadata=_runtime_metadata(runtime),
     )
-    emit_research_payload(payload, as_json=bool(args.as_json))
-    return 0
 
 
 def run_find_similar_command(args: argparse.Namespace) -> int:
-    config, pricing, runtime = _prepare_runtime(args)
-    payload = run_find_similar_workflow(
+    return _run_runtime_payload_command(
+        args,
+        workflow_runner=run_find_similar_workflow,
+        payload_emitter=emit_find_similar_payload,
         seed_url=args.url,
-        artifact_dir=args.artifact_dir,
-        config=config,
-        pricing=pricing,
-        runtime=runtime,
-        runtime_metadata=_runtime_metadata(runtime),
     )
-    emit_find_similar_payload(payload, as_json=bool(args.as_json))
-    return 0
 
 
 def run_structured_search_command(args: argparse.Namespace) -> int:
-    config, pricing, runtime = _prepare_runtime(args)
-    payload = run_structured_search_workflow(
+    return _run_runtime_payload_command(
+        args,
+        workflow_runner=run_structured_search_workflow,
+        payload_emitter=emit_structured_search_payload,
         query=args.query,
         schema_file=args.schema_file,
-        artifact_dir=args.artifact_dir,
-        config=config,
-        pricing=pricing,
-        runtime=runtime,
-        runtime_metadata=_runtime_metadata(runtime),
     )
-    emit_structured_search_payload(payload, as_json=bool(args.as_json))
-    return 0
 
 
 def run_compare_search_types_command(args: argparse.Namespace) -> int:
@@ -144,14 +118,7 @@ def run_compare_search_types_command(args: argparse.Namespace) -> int:
         resolve_runtime=_resolve_runtime,
         run_id_suffix_for_search_type=_run_id_suffix_for_search_type,
         normalized_query_suite=normalized_query_suite,
-        eval_workflow_runner=lambda command_args, **overrides: run_eval_workflow(
-            command_args,
-            prepare_runtime=_prepare_runtime,
-            runtime_metadata=_runtime_metadata,
-            namespace_with_overrides=_namespace_with_overrides,
-            run_eval_workflow_impl=run_ranked_eval_workflow,
-            **overrides,
-        ),
+        eval_workflow_runner=_run_cli_eval_workflow,
     )
     emit_compare_search_types_payload(payload, as_json=bool(args.as_json))
     return 0
@@ -184,6 +151,47 @@ def _prepare_runtime(args: argparse.Namespace) -> tuple[Dict[str, Any], Dict[str
     _apply_search_overrides(config, pricing, args)
     runtime = _resolve_runtime(args.mode, getattr(args, "run_id", None))
     return config, pricing, runtime
+
+
+def _prepared_runtime_context(
+    args: argparse.Namespace,
+) -> tuple[Dict[str, Any], Dict[str, float], RuntimeState, Dict[str, Any]]:
+    config, pricing, runtime = _prepare_runtime(args)
+    return config, pricing, runtime, _runtime_metadata(runtime)
+
+
+def _run_runtime_payload_command(
+    args: argparse.Namespace,
+    *,
+    workflow_runner: Any,
+    payload_emitter: Any,
+    **workflow_kwargs: Any,
+) -> int:
+    config, pricing, runtime, runtime_metadata = _prepared_runtime_context(args)
+    payload = workflow_runner(
+        artifact_dir=args.artifact_dir,
+        config=config,
+        pricing=pricing,
+        runtime=runtime,
+        runtime_metadata=runtime_metadata,
+        **workflow_kwargs,
+    )
+    payload_emitter(payload, as_json=bool(args.as_json))
+    return 0
+
+
+def _run_cli_eval_workflow(
+    args: argparse.Namespace,
+    **overrides: Any,
+) -> Dict[str, Any]:
+    return run_eval_workflow(
+        args,
+        prepare_runtime=_prepare_runtime,
+        runtime_metadata=_runtime_metadata,
+        namespace_with_overrides=_namespace_with_overrides,
+        run_eval_workflow_impl=run_ranked_eval_workflow,
+        **overrides,
+    )
 
 
 def _resolve_runtime(mode: str, run_id: Optional[str]) -> RuntimeState:
