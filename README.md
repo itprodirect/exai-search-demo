@@ -58,7 +58,7 @@ flowchart TD
 - `src/exa_demo/`: reusable package modules for client calls, models, config, evaluation, artifacts, reporting, cache, and safety
 - `tests/`: CLI, client, model, artifact, script, and evaluation coverage
 - `benchmarks/insurance_cat_queries.json`: named query suites used by notebook and CLI evaluation
-- `experiments/`: versioned run artifacts written by workflow commands
+- `experiments/`: runtime artifact root for workflow commands; local runs stay untracked by default
 - `docs/roadmap.md`: canonical backlog and delivery phases
 - `docs/issue-tracker.md`: GitHub issue-to-roadmap mapping
 - `docs/sessions/`: durable session history
@@ -176,7 +176,7 @@ python -m exa_demo eval --mode smoke --limit 5 --compare-to-run-id 20260310T0332
 python -m exa_demo budget --run-id demo-2026-03 --json
 ```
 
-The search and eval commands write the same experiments/<RUN_ID>/ artifact bundle as the notebook flow.
+The search and eval commands write the same `experiments/<RUN_ID>/` artifact bundle as the notebook flow.
 The `answer` command writes the same run directory and adds an `answer.json` artifact containing the cited-answer payload.
 The `research` command writes the same run directory and adds `research.json` plus `research.md` artifacts for the research-report payload.
 The `structured-search` command runs a schema-driven deep search and writes a `structured_output.json` artifact containing the extracted structured payload.
@@ -224,6 +224,7 @@ Workflow-specific commands may also add:
 
 Smoke-mode runs keep the same artifact shape, but with mocked results and zero spend.
 Every run also records runtime execution metadata in `config.json`, `summary.json`, and `manifest.json` so downstream review can distinguish smoke artifacts from live runs.
+Local runtime outputs under `experiments/` are intentionally gitignored by default; the repo may still keep a small curated sample artifact set when needed for documentation or regression context.
 
 ## Demo Gallery
 
@@ -287,6 +288,7 @@ python .\scripts\run_notebook_smoke.py --mode smoke
 - `python -m ruff check .`
 - `python -m pytest -q`
 - `pre-commit run --all-files`
+- `python scripts/run_live_validation.py --mode smoke`
 
 Modes:
 - `--mode smoke`: forced no-network run (default)

@@ -233,3 +233,26 @@ def test_run_live_validation_smoke_writes_summary(tmp_path, monkeypatch, capsys)
     assert summary_payload['run_id_prefix'] == 'test-prefix'
     assert summary_payload['commands'][0]['name'] == 'search'
     assert summary_payload['commands'][-1]['name'] == 'compare-search-types'
+
+
+def test_build_validation_commands_includes_smoke_workflows(tmp_path) -> None:
+    module = _load_script_module('scripts_run_live_validation_test_builder', 'scripts/run_live_validation.py')
+    artifact_dir = tmp_path / 'live-validation-artifacts'
+
+    commands = module.build_validation_commands(
+        repo_root=tmp_path,
+        artifact_dir=artifact_dir,
+        run_id_prefix='ci-smoke',
+        mode='smoke',
+        include_comparison=False,
+    )
+
+    assert [command['name'] for command in commands] == [
+        'search',
+        'answer',
+        'research',
+        'structured-search',
+        'find-similar',
+    ]
+    assert commands[0]['argv'][-3:] == ['--artifact-dir', str(artifact_dir), '--json']
+    assert '--include-comparison' not in ' '.join(str(part) for part in commands[-1]['argv'])

@@ -7,7 +7,7 @@ on:
 jobs:
   smoke-notebook:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,3 +41,7 @@ jobs:
           EXA_SMOKE_NO_NETWORK: "1"
         run: |
           python scripts/run_notebook_smoke.py --mode smoke
+
+      - name: Run bounded smoke validation
+        run: |
+          python scripts/run_live_validation.py --mode smoke --run-id-prefix ci-smoke
