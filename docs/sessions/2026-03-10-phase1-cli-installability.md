@@ -2,7 +2,7 @@
 
 - Date: 2026-03-10
 - Participants: Codex, repository owner
-- Related roadmap items: [docs/roadmap.md](../roadmap.md), [#3](https://github.com/itprodirect/exai-search-demo/issues/3)
+- Related roadmap items: [docs/roadmap.md](../roadmap.md), [#3](https://github.com/itprodirect/exai-insurance-intel/issues/3)
 - Related ADRs: [ADR-0001-roadmap-governance.md](../adr/ADR-0001-roadmap-governance.md)
 
 ## Context
@@ -24,8 +24,8 @@ Continue Phase 1 by turning the extracted package into an installable project wi
 
 ## Issues Opened or Updated
 
-- [#3](https://github.com/itprodirect/exai-search-demo/issues/3): implemented package metadata, CLI entrypoints, and install verification.
-- [#1](https://github.com/itprodirect/exai-search-demo/issues/1): foundation epic now includes typed models, artifact logging, and CLI/installability work.
+- [#3](https://github.com/itprodirect/exai-insurance-intel/issues/3): implemented package metadata, CLI entrypoints, and install verification.
+- [#1](https://github.com/itprodirect/exai-insurance-intel/issues/1): foundation epic now includes typed models, artifact logging, and CLI/installability work.
 
 ## Docs Touched
 
@@ -58,6 +58,6 @@ Continue Phase 1 by turning the extracted package into an installable project wi
 
 ## Next-Session Handoff
 
-- Decide whether to close or further refine [#3](https://github.com/itprodirect/exai-search-demo/issues/3) after review.
-- Continue with [#5](https://github.com/itprodirect/exai-search-demo/issues/5) evaluation taxonomy/reporting or move into Phase 2 endpoint coverage.
+- Decide whether to close or further refine [#3](https://github.com/itprodirect/exai-insurance-intel/issues/3) after review.
+- Continue with [#5](https://github.com/itprodirect/exai-insurance-intel/issues/5) evaluation taxonomy/reporting or move into Phase 2 endpoint coverage.
 - If package install instructions change, keep [README.md](../../README.md) and [pyproject.toml](../../pyproject.toml) aligned.

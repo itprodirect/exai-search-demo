@@ -1,11 +1,11 @@
-﻿# ADR-0001: Roadmap Governance and Delivery Tracking
+# ADR-0001: Roadmap Governance and Delivery Tracking
 
 - Date: 2026-03-10
 - Status: Accepted
 
 ## Context
 
-The repository gained a detailed improvement proposal in `docs/exai-search-demo-improvements.md`, but it did not yet have a canonical roadmap, durable decision log, or GitHub backlog structure. The repo also already contains more implementation than the proposal assumes, so future planning needs to start from the actual baseline rather than a notebook-only mental model.
+The repository gained a detailed improvement proposal in [the improvement roadmap](../exai-insurance-intel-improvements.md), but it did not yet have a canonical roadmap, durable decision log, or GitHub backlog structure. The repo also already contains more implementation than the proposal assumes, so future planning needs to start from the actual baseline rather than a notebook-only mental model.
 
 ## Decision
 

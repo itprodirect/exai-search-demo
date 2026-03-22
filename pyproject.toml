@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "exa-demo"
+name = "exai-insurance-intel"
 version = "0.1.0"
-description = "Notebook-first Exa search evaluation harness for insurance and CAT-loss workflows."
+description = "Exa-powered insurance intelligence toolkit for CAT-loss, claims, expert, contractor, and market research workflows."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -26,6 +26,7 @@ dev = [
 
 [project.scripts]
 exa-demo = "exa_demo.cli:main"
+exai-insurance-intel = "exa_demo.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

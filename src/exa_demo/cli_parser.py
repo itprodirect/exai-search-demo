@@ -8,7 +8,9 @@ from .ranked_workflows import LEGACY_DEFAULT_SUITE_ALIAS, benchmark_suite_choice
 
 
 def build_parser(*, handlers: Mapping[str, Callable[..., int]]) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="CLI for the Exa search demo package.")
+    parser = argparse.ArgumentParser(
+        description="CLI for the exai-insurance-intel toolkit."
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     search_parser = subparsers.add_parser("search", help="Run a single search query.")

@@ -28,8 +28,8 @@ Create a durable roadmap and GitHub backlog from the newly added improvement doc
 
 ## Issues Opened or Updated
 
-- Created epic issues [#1](https://github.com/itprodirect/exai-search-demo/issues/1), [#6](https://github.com/itprodirect/exai-search-demo/issues/6), [#12](https://github.com/itprodirect/exai-search-demo/issues/12), and [#15](https://github.com/itprodirect/exai-search-demo/issues/15).
-- Created task issues [#2](https://github.com/itprodirect/exai-search-demo/issues/2) through [#5](https://github.com/itprodirect/exai-search-demo/issues/5), [#7](https://github.com/itprodirect/exai-search-demo/issues/7) through [#11](https://github.com/itprodirect/exai-search-demo/issues/11), [#13](https://github.com/itprodirect/exai-search-demo/issues/13), [#14](https://github.com/itprodirect/exai-search-demo/issues/14), and [#16](https://github.com/itprodirect/exai-search-demo/issues/16) through [#18](https://github.com/itprodirect/exai-search-demo/issues/18).
+- Created epic issues [#1](https://github.com/itprodirect/exai-insurance-intel/issues/1), [#6](https://github.com/itprodirect/exai-insurance-intel/issues/6), [#12](https://github.com/itprodirect/exai-insurance-intel/issues/12), and [#15](https://github.com/itprodirect/exai-insurance-intel/issues/15).
+- Created task issues [#2](https://github.com/itprodirect/exai-insurance-intel/issues/2) through [#5](https://github.com/itprodirect/exai-insurance-intel/issues/5), [#7](https://github.com/itprodirect/exai-insurance-intel/issues/7) through [#11](https://github.com/itprodirect/exai-insurance-intel/issues/11), [#13](https://github.com/itprodirect/exai-insurance-intel/issues/13), [#14](https://github.com/itprodirect/exai-insurance-intel/issues/14), and [#16](https://github.com/itprodirect/exai-insurance-intel/issues/16) through [#18](https://github.com/itprodirect/exai-insurance-intel/issues/18).
 - Applied consistent issue bodies covering problem, why now, scope, non-goals, acceptance criteria, dependencies, and source references.
 - Added labels and milestones to support phased tracking.
 
@@ -57,6 +57,6 @@ Create a durable roadmap and GitHub backlog from the newly added improvement doc
 
 ## Next-Session Handoff
 
-- Start with the Phase 1 foundation issues, especially [#2](https://github.com/itprodirect/exai-search-demo/issues/2) and [#4](https://github.com/itprodirect/exai-search-demo/issues/4).
+- Start with the Phase 1 foundation issues, especially [#2](https://github.com/itprodirect/exai-insurance-intel/issues/2) and [#4](https://github.com/itprodirect/exai-insurance-intel/issues/4).
 - Keep the roadmap and issue tracker synchronized if issue titles, labels, or milestones change.
 - Re-run `pytest -q` after any docs-only changes that touch tracked files to confirm the repo baseline remains stable.

@@ -1,8 +1,8 @@
-﻿# Exa Search Demo Roadmap
+# exai-insurance-intel Roadmap
 
 ## Summary
 
-This roadmap merges the current-state observations from [rebuild_review.md](./rebuild_review.md) and the opportunity set in [exai-search-demo-improvements.md](./exai-search-demo-improvements.md).
+This roadmap merges the current-state observations from [rebuild_review.md](./rebuild_review.md) and the opportunity set in [the improvement roadmap](./exai-insurance-intel-improvements.md).
 
 It is intentionally phased from the actual repo baseline as of March 10, 2026, not from a hypothetical notebook-only starting point.
 
@@ -31,10 +31,10 @@ These items establish the engineering substrate needed before deeper API coverag
 
 | Roadmap item | Goal | Why it matters | Current status | Dependencies | Success criteria | GitHub issue |
 | --- | --- | --- | --- | --- | --- | --- |
-| Typed models | Add normalized models in `src/exa_demo/models.py` for Exa results, cost metadata, and experiment artifacts | Stabilizes interfaces between notebook, CLI, evaluation, and reports | `Done` | Phase 0 baseline | Shared typed models are used by package code and tests for normalization and reporting | [#2](https://github.com/itprodirect/exai-search-demo/issues/2) |
-| Installable package + CLI | Add package metadata and planned CLI commands `python -m exa_demo search`, `eval`, and `budget` | Makes the harness runnable without opening Jupyter and supports repeatable operations | `Done` | Typed models | Local install and documented CLI entrypoints work against existing core logic | [#3](https://github.com/itprodirect/exai-search-demo/issues/3) |
-| Experiment artifact logging | Persist immutable run artifacts under `experiments/<run-id>/` with `config.json`, `queries.jsonl`, `results.jsonl`, and `summary.json` | Creates an auditable decision history for evaluation changes | `Done` | Typed models, CLI/package installability | Each run emits a complete artifact bundle that can be compared later | [#4](https://github.com/itprodirect/exai-search-demo/issues/4) |
-| Evaluation taxonomy + before/after reporting | Add richer failure taxonomy and comparison reporting | Separates relevance, credibility, and actionability so future experiments are measurable | `Done` | Experiment artifacts | Reports can compare runs and classify failures such as `no_results`, `off_domain`, and `low_confidence` | [#5](https://github.com/itprodirect/exai-search-demo/issues/5) |
+| Typed models | Add normalized models in `src/exa_demo/models.py` for Exa results, cost metadata, and experiment artifacts | Stabilizes interfaces between notebook, CLI, evaluation, and reports | `Done` | Phase 0 baseline | Shared typed models are used by package code and tests for normalization and reporting | [#2](https://github.com/itprodirect/exai-insurance-intel/issues/2) |
+| Installable package + CLI | Add package metadata and planned CLI commands `python -m exa_demo search`, `eval`, and `budget` | Makes the harness runnable without opening Jupyter and supports repeatable operations | `Done` | Typed models | Local install and documented CLI entrypoints work against existing core logic | [#3](https://github.com/itprodirect/exai-insurance-intel/issues/3) |
+| Experiment artifact logging | Persist immutable run artifacts under `experiments/<run-id>/` with `config.json`, `queries.jsonl`, `results.jsonl`, and `summary.json` | Creates an auditable decision history for evaluation changes | `Done` | Typed models, CLI/package installability | Each run emits a complete artifact bundle that can be compared later | [#4](https://github.com/itprodirect/exai-insurance-intel/issues/4) |
+| Evaluation taxonomy + before/after reporting | Add richer failure taxonomy and comparison reporting | Separates relevance, credibility, and actionability so future experiments are measurable | `Done` | Experiment artifacts | Reports can compare runs and classify failures such as `no_results`, `off_domain`, and `low_confidence` | [#5](https://github.com/itprodirect/exai-insurance-intel/issues/5) |
 
 ## Phase 2 - Exa API Coverage
 
@@ -42,11 +42,11 @@ These items expand the repo from a people-search harness into a broader Exa capa
 
 | Roadmap item | Goal | Why it matters | Current status | Dependencies | Success criteria | GitHub issue |
 | --- | --- | --- | --- | --- | --- | --- |
-| `/answer` endpoint demo | Add cited-answer workflows for fast regulatory and case-law lookups | Delivers immediate utility for research-style questions | `Done` | Typed models, reporting | Repo includes a documented demo or workflow for `/answer` with cited outputs and evaluation hooks | [#7](https://github.com/itprodirect/exai-search-demo/issues/7) |
-| Deep vs deep-reasoning comparison | Compare `auto`, `deep`, and `deep-reasoning` quality/cost tradeoffs for domain queries | Quantifies whether higher-cost search modes are worth using in this vertical | `Done` | Experiment artifacts, reporting | Repeatable comparison output shows quality and spend deltas across search types | [#8](https://github.com/itprodirect/exai-search-demo/issues/8) |
-| Structured output with `output_schema` | Extract structured entities directly from deep search responses | Enables downstream graph, analytics, and dataset workflows | `Done` | Typed models, deep-search support | Structured outputs are validated, stored, and demoed from a supported query set | [#9](https://github.com/itprodirect/exai-search-demo/issues/9) |
-| `/findSimilar` demo | Add seed-URL discovery for competitor, expert, and content expansion | Broadens discovery workflows beyond keyword search | `Done` | CLI or notebook demo conventions | Repo includes a reproducible `/findSimilar` workflow and evaluation framing | [#10](https://github.com/itprodirect/exai-search-demo/issues/10) |
-| `/research` demo | Add agentic research output for market and regulatory reports | Shows the most advanced report-generation capability in the Exa stack | `Done` | Typed models, artifact logging | Repo includes a documented research workflow and structured output/report handling | [#11](https://github.com/itprodirect/exai-search-demo/issues/11) |
+| `/answer` endpoint demo | Add cited-answer workflows for fast regulatory and case-law lookups | Delivers immediate utility for research-style questions | `Done` | Typed models, reporting | Repo includes a documented demo or workflow for `/answer` with cited outputs and evaluation hooks | [#7](https://github.com/itprodirect/exai-insurance-intel/issues/7) |
+| Deep vs deep-reasoning comparison | Compare `auto`, `deep`, and `deep-reasoning` quality/cost tradeoffs for domain queries | Quantifies whether higher-cost search modes are worth using in this vertical | `Done` | Experiment artifacts, reporting | Repeatable comparison output shows quality and spend deltas across search types | [#8](https://github.com/itprodirect/exai-insurance-intel/issues/8) |
+| Structured output with `output_schema` | Extract structured entities directly from deep search responses | Enables downstream graph, analytics, and dataset workflows | `Done` | Typed models, deep-search support | Structured outputs are validated, stored, and demoed from a supported query set | [#9](https://github.com/itprodirect/exai-insurance-intel/issues/9) |
+| `/findSimilar` demo | Add seed-URL discovery for competitor, expert, and content expansion | Broadens discovery workflows beyond keyword search | `Done` | CLI or notebook demo conventions | Repo includes a reproducible `/findSimilar` workflow and evaluation framing | [#10](https://github.com/itprodirect/exai-insurance-intel/issues/10) |
+| `/research` demo | Add agentic research output for market and regulatory reports | Shows the most advanced report-generation capability in the Exa stack | `Done` | Typed models, artifact logging | Repo includes a documented research workflow and structured output/report handling | [#11](https://github.com/itprodirect/exai-insurance-intel/issues/11) |
 
 ## Phase 3 - Domain Coverage and Productization
 
@@ -54,9 +54,9 @@ These items extend the technical baseline into a more useful vertical demo for i
 
 | Roadmap item | Goal | Why it matters | Current status | Dependencies | Success criteria | GitHub issue |
 | --- | --- | --- | --- | --- | --- | --- |
-| Insurance/CAT query suites | Expand benchmark and demo suites for public adjusters, CAT law, appraisers, independent adjusters, and adjacent industries | Demonstrates domain depth instead of a narrow people-search slice | `Done` | Experiment artifacts, evaluation taxonomy | Query suites are versioned, documented, and runnable through the shared harness | [#13](https://github.com/itprodirect/exai-search-demo/issues/13) |
-| Export/report outputs + demo gallery | Add CSV/JSON/report exports and a focused demo-gallery structure | Improves stakeholder review and repeatable presentation | `Done` | Experiment artifacts, API coverage demos | Repo can emit reusable outputs and has documented demo entrypoints by use case | [#14](https://github.com/itprodirect/exai-search-demo/issues/14) |
-| CI/security/integration follow-ons | Extend CI coverage, pre-commit/security checks, and document concrete integration boundaries | Keeps future expansion disciplined and safer to operate | `In progress` | Foundation and reporting work | CI/test/security posture expands without weakening the current safe-default workflow | [#16](https://github.com/itprodirect/exai-search-demo/issues/16) |
+| Insurance/CAT query suites | Expand benchmark and demo suites for public adjusters, CAT law, appraisers, independent adjusters, and adjacent industries | Demonstrates domain depth instead of a narrow people-search slice | `Done` | Experiment artifacts, evaluation taxonomy | Query suites are versioned, documented, and runnable through the shared harness | [#13](https://github.com/itprodirect/exai-insurance-intel/issues/13) |
+| Export/report outputs + demo gallery | Add CSV/JSON/report exports and a focused demo-gallery structure | Improves stakeholder review and repeatable presentation | `Done` | Experiment artifacts, API coverage demos | Repo can emit reusable outputs and has documented demo entrypoints by use case | [#14](https://github.com/itprodirect/exai-insurance-intel/issues/14) |
+| CI/security/integration follow-ons | Extend CI coverage, pre-commit/security checks, and document concrete integration boundaries | Keeps future expansion disciplined and safer to operate | `In progress` | Foundation and reporting work | CI/test/security posture expands without weakening the current safe-default workflow | [#16](https://github.com/itprodirect/exai-insurance-intel/issues/16) |
 
 ## Phase 4 - Documentation, Governance, and Repo Operations
 
@@ -64,8 +64,8 @@ This phase governs how roadmap work is tracked and how delivery history is prese
 
 | Roadmap item | Goal | Why it matters | Current status | Dependencies | Success criteria | GitHub issue |
 | --- | --- | --- | --- | --- | --- | --- |
-| Governance and delivery tracking | Maintain roadmap, issue tracker, ADRs, and session notes as durable project history | Preserves why decisions were made and what changed each session | `In progress` | None | Docs and GitHub stay in sync for roadmap items and active work | [#17](https://github.com/itprodirect/exai-search-demo/issues/17) |
-| README alignment and top-level navigation | Keep the README synchronized with the actual repo baseline, roadmap, and governance docs | Makes the repo entry point accurate for future sessions and contributors | `Done` | Governance conventions | README links, feature framing, and architecture context stay aligned with the roadmap | [#18](https://github.com/itprodirect/exai-search-demo/issues/18) |
+| Governance and delivery tracking | Maintain roadmap, issue tracker, ADRs, and session notes as durable project history | Preserves why decisions were made and what changed each session | `In progress` | None | Docs and GitHub stay in sync for roadmap items and active work | [#17](https://github.com/itprodirect/exai-insurance-intel/issues/17) |
+| README alignment and top-level navigation | Keep the README synchronized with the actual repo baseline, roadmap, and governance docs | Makes the repo entry point accurate for future sessions and contributors | `Done` | Governance conventions | README links, feature framing, and architecture context stay aligned with the roadmap | [#18](https://github.com/itprodirect/exai-insurance-intel/issues/18) |
 
 ## Planned Interfaces and Contracts
 
@@ -133,7 +133,7 @@ These are preserved as future exploration themes, but they are not committed bac
 
 ## Source Inputs
 
-- [docs/exai-search-demo-improvements.md](./exai-search-demo-improvements.md)
+- [Improvement roadmap](./exai-insurance-intel-improvements.md)
 - [docs/rebuild_review.md](./rebuild_review.md)
 - Current repository code, tests, CI, and README baseline observed on March 10, 2026
 

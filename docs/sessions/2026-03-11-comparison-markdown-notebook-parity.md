@@ -2,7 +2,7 @@
 
 - Date: 2026-03-11
 - Participants: Codex, repository owner
-- Related roadmap items: [docs/roadmap.md](../roadmap.md), [#5](https://github.com/itprodirect/exai-search-demo/issues/5)
+- Related roadmap items: [docs/roadmap.md](../roadmap.md), [#5](https://github.com/itprodirect/exai-insurance-intel/issues/5)
 - Related ADRs: [ADR-0001-roadmap-governance.md](../adr/ADR-0001-roadmap-governance.md)
 
 ## Context
@@ -24,7 +24,7 @@ Follow-up polish after #5 implementation to add a human-readable comparison arti
 
 ## Issues Opened or Updated
 
-- [#5](https://github.com/itprodirect/exai-search-demo/issues/5): polished with reviewer-facing markdown output and notebook parity.
+- [#5](https://github.com/itprodirect/exai-insurance-intel/issues/5): polished with reviewer-facing markdown output and notebook parity.
 
 ## Docs Touched
 

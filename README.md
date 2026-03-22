@@ -1,6 +1,8 @@
-﻿# exai-search-demo
+﻿# exai-insurance-intel
 
-Minimal, reproducible **Exa search and research demo harness** for insurance / CAT-loss workflows.
+Exa-powered **insurance intelligence toolkit** for CAT-loss, claims, expert, contractor, and market research workflows.
+
+This repo stays intentionally lean while supporting repeatable notebook and CLI workflows for insurance research, cited answers, structured extraction, and report generation.
 
 This repo is intentionally in **minimal mode**:
 - one core notebook: `exa_people_search_eval.ipynb`
@@ -332,14 +334,14 @@ git init
 git branch -M main
 git add .
 git commit -m "feat: minimal exa people search eval harness"
-git remote add origin https://github.com/itprodirect/exai-search-demo.git
+git remote add origin https://github.com/itprodirect/exai-insurance-intel.git
 git push -u origin main
 ```
 
 If remote already exists:
 
 ```powershell
-git remote set-url origin https://github.com/itprodirect/exai-search-demo.git
+git remote set-url origin https://github.com/itprodirect/exai-insurance-intel.git
 git push -u origin main
 ```
 

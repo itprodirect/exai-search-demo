@@ -2,7 +2,7 @@
 
 - Date: 2026-03-11
 - Participants: Codex, repository owner
-- Related roadmap items: [docs/roadmap.md](../roadmap.md), [#5](https://github.com/itprodirect/exai-search-demo/issues/5), [#1](https://github.com/itprodirect/exai-search-demo/issues/1)
+- Related roadmap items: [docs/roadmap.md](../roadmap.md), [#5](https://github.com/itprodirect/exai-insurance-intel/issues/5), [#1](https://github.com/itprodirect/exai-insurance-intel/issues/1)
 - Related ADRs: [ADR-0001-roadmap-governance.md](../adr/ADR-0001-roadmap-governance.md)
 
 ## Context
@@ -24,8 +24,8 @@ Deliver the remaining Phase 1 task for richer evaluation taxonomy and before/aft
 
 ## Issues Opened or Updated
 
-- [#5](https://github.com/itprodirect/exai-search-demo/issues/5): implemented end-to-end with taxonomy scoring, failure classification, and baseline-vs-candidate comparison reporting.
-- [#1](https://github.com/itprodirect/exai-search-demo/issues/1): foundation epic remains in progress, with the final Phase 1 task now implemented.
+- [#5](https://github.com/itprodirect/exai-insurance-intel/issues/5): implemented end-to-end with taxonomy scoring, failure classification, and baseline-vs-candidate comparison reporting.
+- [#1](https://github.com/itprodirect/exai-insurance-intel/issues/1): foundation epic remains in progress, with the final Phase 1 task now implemented.
 
 ## Docs Touched
 
@@ -61,6 +61,6 @@ Deliver the remaining Phase 1 task for richer evaluation taxonomy and before/aft
 
 ## Next-Session Handoff
 
-- Close [#5](https://github.com/itprodirect/exai-search-demo/issues/5) in GitHub after review of this commit.
-- Decide whether [#1](https://github.com/itprodirect/exai-search-demo/issues/1) should now be closed or moved to follow-on hardening tasks.
+- Close [#5](https://github.com/itprodirect/exai-insurance-intel/issues/5) in GitHub after review of this commit.
+- Decide whether [#1](https://github.com/itprodirect/exai-insurance-intel/issues/1) should now be closed or moved to follow-on hardening tasks.
 - Consider adding a markdown/HTML exporter for the comparison payload to support stakeholder-readable run reports.

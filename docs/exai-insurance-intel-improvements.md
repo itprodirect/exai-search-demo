@@ -1,4 +1,4 @@
-# exai-search-demo — Improvement Roadmap
+# exai-insurance-intel - Improvement Roadmap
 
 ## Current State Assessment
 

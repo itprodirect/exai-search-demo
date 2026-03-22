@@ -1,4 +1,4 @@
-# Exa Search Demo Rebuild Review
+# exai-insurance-intel Rebuild Review
 
 ## TL;DR
 If we were rebuilding this today, we would keep the **minimal, notebook-first evaluation loop** and safety framing, but we would split orchestration logic into a tiny Python package and treat the notebook as a presentation layer. That gives us repeatability, easier A/B experiments, and cleaner migration from demo to pilot.

@@ -2,7 +2,7 @@
 
 - Date: 2026-03-10
 - Participants: Codex, repository owner
-- Related roadmap items: [docs/roadmap.md](../roadmap.md), [#2](https://github.com/itprodirect/exai-search-demo/issues/2), [#4](https://github.com/itprodirect/exai-search-demo/issues/4)
+- Related roadmap items: [docs/roadmap.md](../roadmap.md), [#2](https://github.com/itprodirect/exai-insurance-intel/issues/2), [#4](https://github.com/itprodirect/exai-insurance-intel/issues/4)
 - Related ADRs: [ADR-0001-roadmap-governance.md](../adr/ADR-0001-roadmap-governance.md)
 
 ## Context
@@ -24,9 +24,9 @@ Start Phase 1 implementation with the two foundation items that unlock the rest 
 
 ## Issues Opened or Updated
 
-- [#2](https://github.com/itprodirect/exai-search-demo/issues/2): implemented `src/exa_demo/models.py` and normalized query-evaluation records.
-- [#4](https://github.com/itprodirect/exai-search-demo/issues/4): implemented `src/exa_demo/artifacts.py` and notebook-backed `experiments/<RUN_ID>/` output.
-- [#1](https://github.com/itprodirect/exai-search-demo/issues/1): foundation epic now has active implementation underneath it.
+- [#2](https://github.com/itprodirect/exai-insurance-intel/issues/2): implemented `src/exa_demo/models.py` and normalized query-evaluation records.
+- [#4](https://github.com/itprodirect/exai-insurance-intel/issues/4): implemented `src/exa_demo/artifacts.py` and notebook-backed `experiments/<RUN_ID>/` output.
+- [#1](https://github.com/itprodirect/exai-insurance-intel/issues/1): foundation epic now has active implementation underneath it.
 
 ## Docs Touched
 
@@ -60,6 +60,6 @@ Start Phase 1 implementation with the two foundation items that unlock the rest 
 
 ## Next-Session Handoff
 
-- Decide whether to close or further refine [#2](https://github.com/itprodirect/exai-search-demo/issues/2) and [#4](https://github.com/itprodirect/exai-search-demo/issues/4) after review.
-- Continue Phase 1 with [#3](https://github.com/itprodirect/exai-search-demo/issues/3) CLI/installability and [#5](https://github.com/itprodirect/exai-search-demo/issues/5) richer evaluation reporting.
+- Decide whether to close or further refine [#2](https://github.com/itprodirect/exai-insurance-intel/issues/2) and [#4](https://github.com/itprodirect/exai-insurance-intel/issues/4) after review.
+- Continue Phase 1 with [#3](https://github.com/itprodirect/exai-insurance-intel/issues/3) CLI/installability and [#5](https://github.com/itprodirect/exai-insurance-intel/issues/5) richer evaluation reporting.
 - If the artifact schema changes, keep [README.md](../../README.md) and [docs/roadmap.md](../roadmap.md) aligned.
